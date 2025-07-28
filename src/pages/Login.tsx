@@ -3,25 +3,54 @@ import EmotivaButton from "@/components/EmotivaButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Mail, Lock, School, User } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Mail, Lock } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface LoginProps {
   onNavigate: (page: string) => void;
 }
 
 const Login = ({ onNavigate }: LoginProps) => {
-  const [userType, setUserType] = useState<"parent" | "school" | null>(null);
   const [formData, setFormData] = useState({
     email: "",
-    password: "",
-    schoolCode: ""
+    password: ""
   });
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simular login - em produção conectaria com backend
-    onNavigate('dashboard');
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        toast({
+          title: "Erro ao fazer login",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Redirecionando para o dashboard...",
+        });
+        onNavigate('dashboard');
+      }
+    } catch (error) {
+      toast({
+        title: "Erro inesperado",
+        description: "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -48,108 +77,59 @@ const Login = ({ onNavigate }: LoginProps) => {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Seleção de tipo de usuário */}
-            {!userType && (
-              <div className="space-y-4">
-                <Label className="text-sm font-medium">Você é:</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setUserType("parent")}
-                    className="p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-primary-soft/30 transition-all duration-200 group"
-                  >
-                    <User className="w-8 h-8 text-primary mx-auto mb-2" />
-                    <span className="font-medium">Pai/Mãe</span>
-                  </button>
-                  <button
-                    onClick={() => setUserType("school")}
-                    className="p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-primary-soft/30 transition-all duration-200 group"
-                  >
-                    <School className="w-8 h-8 text-primary mx-auto mb-2" />
-                    <span className="font-medium">Escola</span>
-                  </button>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="pl-10 h-12 rounded-xl"
+                    required
+                  />
                 </div>
               </div>
-            )}
 
-            {/* Formulário de login */}
-            {userType && (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Badge variant="outline" className="text-xs">
-                    {userType === "parent" ? "👨‍👩‍👧‍👦 Pai/Mãe" : "🏫 Escola"}
-                  </Badge>
-                  <button
-                    type="button"
-                    onClick={() => setUserType(null)}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    Alterar
-                  </button>
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    className="pl-10 h-12 rounded-xl"
+                    required
+                  />
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-mail</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className="pl-10 h-12 rounded-xl"
-                      required
-                    />
-                  </div>
-                </div>
+              <EmotivaButton 
+                type="submit" 
+                variant="primary" 
+                size="lg" 
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? "Entrando..." : "Entrar"}
+              </EmotivaButton>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={formData.password}
-                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                      className="pl-10 h-12 rounded-xl"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {userType === "parent" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="schoolCode">Código da Escola (opcional)</Label>
-                    <Input
-                      id="schoolCode"
-                      placeholder="Código fornecido pela escola"
-                      value={formData.schoolCode}
-                      onChange={(e) => setFormData(prev => ({ ...prev, schoolCode: e.target.value }))}
-                      className="h-12 rounded-xl"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Conecte-se com a escola do seu filho
-                    </p>
-                  </div>
-                )}
-
-                <EmotivaButton type="submit" variant="primary" size="lg" className="w-full">
-                  Entrar
-                </EmotivaButton>
-
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('register')}
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    Não tem conta? <span className="text-primary font-medium">Criar conta</span>
-                  </button>
-                </div>
-              </form>
-            )}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('register')}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Não tem conta? <span className="text-primary font-medium">Criar conta</span>
+                </button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>

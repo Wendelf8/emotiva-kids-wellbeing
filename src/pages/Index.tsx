@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Welcome from "./Welcome";
 import Login from "./Login";
+import Register from "./Register";
 import Dashboard from "./Dashboard";
 import CheckIn from "./CheckIn";
 import Reports from "./Reports";
@@ -18,8 +19,9 @@ const Index = () => {
       case "welcome":
         return <Welcome onNavigate={handleNavigate} />;
       case "login":
-      case "register":
         return <Login onNavigate={handleNavigate} />;
+      case "register":
+        return <Register onNavigate={handleNavigate} />;
       case "dashboard":
         return <Dashboard onNavigate={handleNavigate} />;
       case "checkin":
