@@ -3,8 +3,8 @@ import EmotivaButton from "@/components/EmotivaButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Mail, Lock, User, School } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Mail, Lock, User, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,18 +13,27 @@ interface RegisterProps {
 }
 
 const Register = ({ onNavigate }: RegisterProps) => {
-  const [userType, setUserType] = useState<"parent" | "school" | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     confirmPassword: "",
-    nome: ""
+    nome: "",
+    tipo_usuario: ""
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.tipo_usuario) {
+      toast({
+        title: "Erro",
+        description: "Selecione o tipo de usuário.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -56,7 +65,7 @@ const Register = ({ onNavigate }: RegisterProps) => {
           emailRedirectTo: redirectUrl,
           data: {
             nome: formData.nome,
-            tipo_usuario: userType || 'pai'
+            tipo_usuario: formData.tipo_usuario
           }
         }
       });
@@ -109,60 +118,40 @@ const Register = ({ onNavigate }: RegisterProps) => {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Seleção de tipo de usuário */}
-            {!userType && (
-              <div className="space-y-4">
-                <Label className="text-sm font-medium">Você é:</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setUserType("parent")}
-                    className="p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-primary-soft/30 transition-all duration-200 group"
-                  >
-                    <User className="w-8 h-8 text-primary mx-auto mb-2" />
-                    <span className="font-medium">Pai/Mãe</span>
-                  </button>
-                  <button
-                    onClick={() => setUserType("school")}
-                    className="p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-primary-soft/30 transition-all duration-200 group"
-                  >
-                    <School className="w-8 h-8 text-primary mx-auto mb-2" />
-                    <span className="font-medium">Escola</span>
-                  </button>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="tipo_usuario">Tipo de Usuário *</Label>
+                <Select 
+                  value={formData.tipo_usuario} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, tipo_usuario: value }))}
+                  required
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue placeholder="Selecione o tipo de usuário" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pai">Pai/Mãe</SelectItem>
+                    <SelectItem value="escola">Escola</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome Completo</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="nome"
+                    type="text"
+                    placeholder="Seu nome completo"
+                    value={formData.nome}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                    className="pl-10 h-12 rounded-xl"
+                    required
+                  />
                 </div>
               </div>
-            )}
-
-            {/* Formulário de cadastro */}
-            {userType && (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Badge variant="outline" className="text-xs">
-                    {userType === "parent" ? "👨‍👩‍👧‍👦 Pai/Mãe" : "🏫 Escola"}
-                  </Badge>
-                  <button
-                    type="button"
-                    onClick={() => setUserType(null)}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    Alterar
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome {userType === "school" ? "da Escola" : "Completo"}</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="nome"
-                      type="text"
-                      placeholder={userType === "school" ? "Nome da escola" : "Seu nome completo"}
-                      value={formData.nome}
-                      onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                      className="pl-10 h-12 rounded-xl"
-                      required
-                    />
-                  </div>
-                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="email">E-mail</Label>
@@ -225,17 +214,16 @@ const Register = ({ onNavigate }: RegisterProps) => {
                   {loading ? "Criando conta..." : "Criar conta"}
                 </EmotivaButton>
 
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('login')}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Já tem conta? <span className="text-primary font-medium">Fazer login</span>
-                  </button>
-                </div>
-              </form>
-            )}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('login')}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Já tem conta? <span className="text-primary font-medium">Fazer login</span>
+                </button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>
