@@ -1,32 +1,81 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EmotivaButton from "@/components/EmotivaButton";
 import MoodCard from "@/components/MoodCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bell, Calendar, TrendingUp, BookOpen, Settings, Menu } from "lucide-react";
+import { Bell, Calendar, TrendingUp, BookOpen, Settings, Menu, MoreVertical, ChevronDown, User, LogOut, HelpCircle, BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface DashboardProps {
   onNavigate: (page: string) => void;
 }
 
 const Dashboard = ({ onNavigate }: DashboardProps) => {
-  const [currentMood] = useState("neutral"); // Estado simulado
-  const [childName] = useState("Sofia"); // Nome simulado
+  const [currentMood] = useState("neutral");
+  const [children, setChildren] = useState<any[]>([]);
+  const [selectedChild, setSelectedChild] = useState<any>(null);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [showAlertsPopover, setShowAlertsPopover] = useState(false);
+  const [showSettingsPopover, setShowSettingsPopover] = useState(false);
+  const [showMenuPopover, setShowMenuPopover] = useState(false);
+  const { toast } = useToast();
 
-  const alerts = [
-    {
-      id: 1,
-      type: "warning",
-      message: "Sofia relatou tristeza por 3 dias seguidos",
-      date: "Hoje"
-    },
-    {
-      id: 2,
-      type: "info", 
-      message: "Novo conteúdo sobre ansiedade infantil disponível",
-      date: "Ontem"
-    }
-  ];
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        
+        // Buscar perfil do usuário
+        const { data: profile } = await (supabase as any)
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        setUserProfile(profile);
+
+        // Se for pai, buscar crianças
+        if (profile && profile.tipo_usuario === 'pai') {
+          const { data: childrenData } = await (supabase as any)
+            .from('criancas')
+            .select('*')
+            .eq('usuario_id', user.id)
+            .order('criado_em', { ascending: true });
+          
+          if (childrenData && childrenData.length > 0) {
+            setChildren(childrenData);
+            setSelectedChild(childrenData[0]);
+          }
+        }
+
+        // Buscar alertas do usuário
+        const { data: alertsData } = await (supabase as any)
+          .from('alertas')
+          .select('*')
+          .eq('enviado_para_id', user.id)
+          .order('criado_em', { ascending: false })
+          .limit(5);
+        
+        if (alertsData) {
+          setAlerts(alertsData);
+        }
+      }
+    };
+    
+    getUser();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    onNavigate('welcome');
+  };
+
 
   const recentMoods = [
     { day: "Seg", mood: "happy" },
@@ -58,15 +107,99 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
           </div>
           
           <div className="flex items-center gap-3">
-            <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-              <Bell className="w-5 h-5" />
-            </button>
-            <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-              <Settings className="w-5 h-5" />
-            </button>
-            <button className="p-2 rounded-lg hover:bg-muted transition-colors md:hidden">
-              <Menu className="w-5 h-5" />
-            </button>
+            {/* Alertas */}
+            <Popover open={showAlertsPopover} onOpenChange={setShowAlertsPopover}>
+              <PopoverTrigger asChild>
+                <button className="p-2 rounded-lg hover:bg-muted transition-colors relative">
+                  <Bell className="w-5 h-5" />
+                  {alerts.length > 0 && (
+                    <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs">
+                      {alerts.length}
+                    </Badge>
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end">
+                <div className="p-4 border-b">
+                  <h3 className="font-semibold">Alertas</h3>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {alerts.length > 0 ? (
+                    alerts.map((alert) => (
+                      <div key={alert.id} className="p-3 border-b last:border-b-0 hover:bg-muted/50">
+                        <p className="text-sm">{alert.mensagem}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(alert.criado_em).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-muted-foreground">
+                      Nenhum alerta
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Configurações */}
+            <Popover open={showSettingsPopover} onOpenChange={setShowSettingsPopover}>
+              <PopoverTrigger asChild>
+                <button className="p-2 rounded-lg hover:bg-muted transition-colors">
+                  <Settings className="w-5 h-5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-0" align="end">
+                <div className="p-2">
+                  <button className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Editar Perfil
+                  </button>
+                  <button 
+                    onClick={() => onNavigate('add-child')}
+                    className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2"
+                  >
+                    <User className="w-4 h-4" />
+                    Gerenciar Crianças
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Menu de três pontos */}
+            <Popover open={showMenuPopover} onOpenChange={setShowMenuPopover}>
+              <PopoverTrigger asChild>
+                <button className="p-2 rounded-lg hover:bg-muted transition-colors">
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-0" align="end">
+                <div className="p-2">
+                  <button 
+                    onClick={() => onNavigate('reports')}
+                    className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Ver Check-ins
+                  </button>
+                  <button 
+                    onClick={() => onNavigate('support')}
+                    className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                    Ajuda
+                  </button>
+                  <div className="border-t my-1"></div>
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2 text-destructive"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sair
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </header>
@@ -74,10 +207,32 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
       <div className="max-w-6xl mx-auto p-4 space-y-6">
         {/* Saudação */}
         <div className="animate-fade-in">
-          <h2 className="text-2xl font-bold mb-2">Olá! 👋</h2>
-          <p className="text-muted-foreground">
-            Como está o dia da {childName} hoje?
-          </p>
+          <h2 className="text-2xl font-bold mb-2">Olá, {userProfile?.nome || 'Usuário'}! 👋</h2>
+          <div className="flex items-center gap-4">
+            <p className="text-muted-foreground">
+              {userProfile?.tipo_usuario === 'pai' && selectedChild 
+                ? `Como está o dia da ${selectedChild.nome} hoje?`
+                : 'Como está o seu dia hoje?'
+              }
+            </p>
+            {children.length > 1 && (
+              <Select value={selectedChild?.id} onValueChange={(value) => {
+                const child = children.find(c => c.id === value);
+                setSelectedChild(child);
+              }}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Selecionar criança" />
+                </SelectTrigger>
+                <SelectContent>
+                  {children.map((child) => (
+                    <SelectItem key={child.id} value={child.id}>
+                      {child.nome} ({child.idade} anos)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
         </div>
 
         {/* Grid principal */}
@@ -131,22 +286,28 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {alerts.map((alert) => (
-                  <div key={alert.id} className="p-3 rounded-lg bg-muted/50">
-                    <div className="flex items-start gap-2">
-                      <Badge 
-                        variant={alert.type === "warning" ? "destructive" : "secondary"}
-                        className="text-xs"
-                      >
-                        {alert.type === "warning" ? "⚠️" : "ℹ️"}
-                      </Badge>
-                      <div className="flex-1">
-                        <p className="text-sm">{alert.message}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{alert.date}</p>
+                {alerts.length > 0 ? (
+                  alerts.slice(0, 3).map((alert) => (
+                    <div key={alert.id} className="p-3 rounded-lg bg-muted/50">
+                      <div className="flex items-start gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          ℹ️
+                        </Badge>
+                        <div className="flex-1">
+                          <p className="text-sm">{alert.mensagem}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(alert.criado_em).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center text-muted-foreground py-4">
+                    <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Nenhum alerta no momento</p>
                   </div>
-                ))}
+                )}
               </CardContent>
             </Card>
 
