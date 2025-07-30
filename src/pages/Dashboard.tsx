@@ -6,6 +6,10 @@ import { Bell, Calendar, TrendingUp, BookOpen, Settings, Menu, MoreVertical, Che
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,6 +27,10 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
   const [showAlertsPopover, setShowAlertsPopover] = useState(false);
   const [showSettingsPopover, setShowSettingsPopover] = useState(false);
   const [showMenuPopover, setShowMenuPopover] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editedName, setEditedName] = useState("");
+  const [editedEmail, setEditedEmail] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -39,6 +47,12 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
           .single();
         
         setUserProfile(profile);
+        
+        // Inicializar campos de edição
+        if (profile) {
+          setEditedName(profile.nome || "");
+          setEditedEmail(profile.email || "");
+        }
 
         // Se for pai, buscar crianças
         if (profile && profile.tipo_usuario === 'pai') {
@@ -74,6 +88,64 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     onNavigate('welcome');
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!editedName.trim()) {
+      toast({
+        title: "Erro",
+        description: "O nome é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!editedEmail.trim()) {
+      toast({
+        title: "Erro", 
+        description: "O email é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUpdating(true);
+
+    try {
+      const { error } = await (supabase as any)
+        .from('profiles')
+        .update({
+          nome: editedName.trim(),
+          email: editedEmail.trim()
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Atualizar estado local
+      setUserProfile({
+        ...userProfile,
+        nome: editedName.trim(),
+        email: editedEmail.trim()
+      });
+
+      setShowEditProfile(false);
+
+      toast({
+        title: "Sucesso!",
+        description: "Perfil atualizado com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar perfil.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
 
@@ -151,10 +223,55 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
               </PopoverTrigger>
               <PopoverContent className="w-56 p-0" align="end">
                 <div className="p-2">
-                  <button className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Editar Perfil
-                  </button>
+                  <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>
+                    <DialogTrigger asChild>
+                      <button className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        Editar Perfil
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Editar Perfil</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Nome</Label>
+                          <Input
+                            id="name"
+                            value={editedName}
+                            onChange={(e) => setEditedName(e.target.value)}
+                            placeholder="Digite seu nome"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={editedEmail}
+                            onChange={(e) => setEditedEmail(e.target.value)}
+                            placeholder="Digite seu email"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowEditProfile(false)}
+                          disabled={isUpdating}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button 
+                          onClick={handleUpdateProfile}
+                          disabled={isUpdating}
+                        >
+                          {isUpdating ? "Salvando..." : "Salvar"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                   <button 
                     onClick={() => onNavigate('add-child')}
                     className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2"
