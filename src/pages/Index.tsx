@@ -45,26 +45,44 @@ const Index = () => {
   }, []);
 
   const checkUserFlow = async (user: any) => {
-    // Buscar o perfil do usuário para verificar o tipo
-    const { data: profile } = await (supabase as any)
-      .from('profiles')
-      .select('tipo_usuario')
-      .eq('id', user.id)
-      .single();
+    try {
+      // Buscar o perfil do usuário para verificar o tipo
+      const { data: profile, error: profileError } = await (supabase as any)
+        .from('profiles')
+        .select('tipo_usuario')
+        .eq('id', user.id)
+        .single();
 
-    if (profile && profile.tipo_usuario === 'pai') {
-      // Verificar se o pai tem crianças cadastradas
-      const { data: children } = await (supabase as any)
-        .from('criancas')
-        .select('id')
-        .eq('usuario_id', user.id);
+      // Se não encontrar perfil ou der erro, vai direto pro dashboard
+      if (profileError || !profile) {
+        console.log('Profile not found or error:', profileError);
+        setCurrentPage('dashboard');
+        return;
+      }
 
-      if (!children || children.length === 0) {
-        setCurrentPage('add-child');
+      if (profile.tipo_usuario === 'pai') {
+        // Verificar se o pai tem crianças cadastradas
+        const { data: children, error: childrenError } = await (supabase as any)
+          .from('criancas')
+          .select('id')
+          .eq('usuario_id', user.id);
+
+        if (childrenError) {
+          console.log('Children query error:', childrenError);
+          setCurrentPage('dashboard');
+          return;
+        }
+
+        if (!children || children.length === 0) {
+          setCurrentPage('add-child');
+        } else {
+          setCurrentPage('dashboard');
+        }
       } else {
         setCurrentPage('dashboard');
       }
-    } else {
+    } catch (error) {
+      console.error('Error in checkUserFlow:', error);
       setCurrentPage('dashboard');
     }
   };
