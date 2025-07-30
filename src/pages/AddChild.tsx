@@ -63,9 +63,23 @@ const AddChild = ({ onNavigate }: AddChildProps) => {
     }
 
     // Obter usuário atual do Supabase diretamente
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+    
+    console.log('Current user from auth:', currentUser);
+    console.log('Auth error:', authError);
+    
+    if (authError) {
+      console.error('Auth error:', authError);
+      toast({
+        title: "Erro de autenticação",
+        description: authError.message,
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!currentUser) {
+      console.error('No current user found');
       toast({
         title: "Erro",
         description: "Usuário não encontrado. Faça login novamente.",
@@ -82,6 +96,8 @@ const AddChild = ({ onNavigate }: AddChildProps) => {
         idade: Number(child.idade),
         usuario_id: currentUser.id
       }));
+
+      console.log('Children to insert:', childrenToInsert);
 
       const { error } = await (supabase as any)
         .from('criancas')
