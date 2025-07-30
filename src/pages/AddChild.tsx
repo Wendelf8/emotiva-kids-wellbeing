@@ -62,10 +62,13 @@ const AddChild = ({ onNavigate }: AddChildProps) => {
       return;
     }
 
-    if (!user) {
+    // Obter usuário atual do Supabase diretamente
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    
+    if (!currentUser) {
       toast({
         title: "Erro",
-        description: "Usuário não encontrado.",
+        description: "Usuário não encontrado. Faça login novamente.",
         variant: "destructive",
       });
       return;
@@ -77,7 +80,7 @@ const AddChild = ({ onNavigate }: AddChildProps) => {
       const childrenToInsert = validChildren.map(child => ({
         nome: child.nome.trim(),
         idade: Number(child.idade),
-        usuario_id: user.id
+        usuario_id: currentUser.id
       }));
 
       const { error } = await (supabase as any)
