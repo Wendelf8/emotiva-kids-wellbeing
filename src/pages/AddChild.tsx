@@ -51,7 +51,27 @@ const AddChild = ({ onNavigate }: AddChildProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação
+    // Validação detalhada
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i];
+      if (!child.nome.trim()) {
+        toast({
+          title: "Erro de validação",
+          description: `O nome da criança ${i + 1} é obrigatório.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!child.idade || isNaN(Number(child.idade))) {
+        toast({
+          title: "Erro de validação", 
+          description: `A idade da criança ${i + 1} deve ser um número válido.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const validChildren = children.filter(child => child.nome.trim() && child.idade);
     if (validChildren.length === 0) {
       toast({
