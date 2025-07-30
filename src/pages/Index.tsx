@@ -15,33 +15,9 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar se há uma sessão ativa
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        // Verificar o tipo de usuário e se tem crianças cadastradas
-        await checkUserFlow(session.user);
-      }
-      setIsLoading(false);
-    };
-
-    // Listener para mudanças na autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          setUser(session.user);
-          await checkUserFlow(session.user);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setCurrentPage('welcome');
-        }
-      }
-    );
-
-    checkAuth();
-
-    return () => subscription.unsubscribe();
+    // Parar loading imediatamente e ir direto para welcome
+    setIsLoading(false);
+    setCurrentPage('welcome');
   }, []);
 
   const checkUserFlow = async (user: any) => {
