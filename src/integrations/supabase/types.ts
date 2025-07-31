@@ -14,13 +14,180 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alertas: {
+        Row: {
+          criado_em: string | null
+          enviado_para_id: string | null
+          id: string
+          mensagem: string | null
+        }
+        Insert: {
+          criado_em?: string | null
+          enviado_para_id?: string | null
+          id?: string
+          mensagem?: string | null
+        }
+        Update: {
+          criado_em?: string | null
+          enviado_para_id?: string | null
+          id?: string
+          mensagem?: string | null
+        }
+        Relationships: []
+      }
+      checkins_emocionais: {
+        Row: {
+          crianca_id: string | null
+          data: string | null
+          emocao: string | null
+          id: string
+          intensidade: number | null
+          observacoes: string | null
+        }
+        Insert: {
+          crianca_id?: string | null
+          data?: string | null
+          emocao?: string | null
+          id?: string
+          intensidade?: number | null
+          observacoes?: string | null
+        }
+        Update: {
+          crianca_id?: string | null
+          data?: string | null
+          emocao?: string | null
+          id?: string
+          intensidade?: number | null
+          observacoes?: string | null
+        }
+        Relationships: []
+      }
+      criancas: {
+        Row: {
+          criado_em: string | null
+          id: string
+          idade: number
+          nome: string
+          usuario_id: string
+        }
+        Insert: {
+          criado_em?: string | null
+          id?: string
+          idade: number
+          nome: string
+          usuario_id: string
+        }
+        Update: {
+          criado_em?: string | null
+          id?: string
+          idade?: number
+          nome?: string
+          usuario_id?: string
+        }
+        Relationships: []
+      }
+      escolas: {
+        Row: {
+          cidade: string | null
+          criado_em: string | null
+          estado: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          cidade?: string | null
+          criado_em?: string | null
+          estado?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          cidade?: string | null
+          criado_em?: string | null
+          estado?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      perfis: {
+        Row: {
+          criado_em: string | null
+          email: string | null
+          id: string
+          nome: string | null
+          tipo_usuario: string
+        }
+        Insert: {
+          criado_em?: string | null
+          email?: string | null
+          id: string
+          nome?: string | null
+          tipo_usuario: string
+        }
+        Update: {
+          criado_em?: string | null
+          email?: string | null
+          id?: string
+          nome?: string | null
+          tipo_usuario?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          criado_em: string | null
+          email: string | null
+          id: string
+          nome: string | null
+          tipo_usuario: string
+        }
+        Insert: {
+          criado_em?: string | null
+          email?: string | null
+          id: string
+          nome?: string | null
+          tipo_usuario: string
+        }
+        Update: {
+          criado_em?: string | null
+          email?: string | null
+          id?: string
+          nome?: string | null
+          tipo_usuario?: string
+        }
+        Relationships: []
+      }
+      usuarios: {
+        Row: {
+          auth_user_id: string | null
+          id: string
+          nome: string | null
+          tipo_usuario: string | null
+        }
+        Insert: {
+          auth_user_id?: string | null
+          id?: string
+          nome?: string | null
+          tipo_usuario?: string | null
+        }
+        Update: {
+          auth_user_id?: string | null
+          id?: string
+          nome?: string | null
+          tipo_usuario?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_complete_schema: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
