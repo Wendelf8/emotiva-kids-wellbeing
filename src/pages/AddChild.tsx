@@ -113,8 +113,7 @@ const AddChild = ({ onNavigate }: AddChildProps) => {
     try {
       const childrenToInsert = validChildren.map(child => ({
         nome: child.nome.trim(),
-        idade: Number(child.idade),
-        usuario_id: currentUser.id
+        idade: Number(child.idade)
       }));
 
       console.log('Children to insert:', childrenToInsert);
