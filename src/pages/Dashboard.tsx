@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAppContext } from "@/contexts/AppContext";
 
 interface DashboardProps {
   onNavigate: (page: string) => void;
@@ -20,7 +21,7 @@ interface DashboardProps {
 const Dashboard = ({ onNavigate }: DashboardProps) => {
   const [currentMood] = useState("neutral");
   const [children, setChildren] = useState<any[]>([]);
-  const [selectedChild, setSelectedChild] = useState<any>(null);
+  const { selectedChild, setSelectedChild } = useAppContext();
   const [alerts, setAlerts] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);

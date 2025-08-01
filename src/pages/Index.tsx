@@ -8,6 +8,7 @@ import Reports from "./Reports";
 import Support from "./Support";
 import AddChild from "./AddChild";
 import { supabase } from "@/integrations/supabase/client";
+import { AppContextProvider } from "@/contexts/AppContext";
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState("welcome");
@@ -101,7 +102,7 @@ const Index = () => {
     }
   };
 
-  return renderPage();
+  return <AppContextProvider>{renderPage()}</AppContextProvider>;
 };
 
 export default Index;

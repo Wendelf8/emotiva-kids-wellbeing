@@ -1,41 +1,173 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, TrendingUp, Calendar, AlertTriangle, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAppContext } from "@/contexts/AppContext";
+import { supabase } from "@/integrations/supabase/client";
+import { getCurrentWeekDates, formatDateRange, formatWeekDay, formatShortDate, formatTime, getWeekDays } from "@/utils/dateUtils";
 
 interface ReportsProps {
   onNavigate: (page: string) => void;
 }
 
 const Reports = ({ onNavigate }: ReportsProps) => {
-  // Dados simulados para o relatório semanal
-  const weeklyData = [
-    { day: "Segunda", mood: "happy", emoji: "😀" },
-    { day: "Terça", mood: "neutral", emoji: "😐" },
-    { day: "Quarta", mood: "sad", emoji: "😢" },
-    { day: "Quinta", mood: "sad", emoji: "😢" },
-    { day: "Sexta", mood: "neutral", emoji: "😐" },
-    { day: "Sábado", mood: "happy", emoji: "😀" },
-    { day: "Domingo", mood: "happy", emoji: "😀" }
-  ];
+  const { selectedChild } = useAppContext();
+  const [weeklyData, setWeeklyData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentWeek, setCurrentWeek] = useState<{ start: Date; end: Date }>(() => {
+    const { startOfWeek, endOfWeek } = getCurrentWeekDates();
+    return { start: startOfWeek, end: endOfWeek };
+  });
 
-  const insights = [
-    {
-      type: "warning",
-      title: "Tristeza contínua",
-      description: "Sofia relatou tristeza por 2 dias seguidos (Qua-Qui)",
-      suggestion: "Considere conversar sobre o que pode estar incomodando"
-    },
-    {
-      type: "positive",
-      title: "Melhora no fim de semana",
-      description: "Humor melhorou significativamente no fim de semana",
-      suggestion: "Identifique quais atividades contribuem para o bem-estar"
+  useEffect(() => {
+    const loadWeeklyData = async () => {
+      if (!selectedChild) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const { startOfWeek, endOfWeek } = getCurrentWeekDates();
+        
+        const { data: checkins, error } = await (supabase as any)
+          .from('checkins_emocionais')
+          .select('*')
+          .eq('crianca_id', selectedChild.id)
+          .gte('data', startOfWeek.toISOString())
+          .lte('data', endOfWeek.toISOString())
+          .order('data', { ascending: true });
+
+        if (error) {
+          console.error('Erro ao buscar check-ins:', error);
+          setWeeklyData([]);
+          return;
+        }
+
+        // Criar dados da semana com base nos dias reais
+        const weekDays = getWeekDays();
+        const formattedData = weekDays.map(date => {
+          const dayName = formatWeekDay(date);
+          const shortDate = formatShortDate(date);
+          
+          // Encontrar check-in para este dia
+          const checkin = checkins?.find(c => {
+            const checkinDate = new Date(c.data);
+            return checkinDate.toDateString() === date.toDateString();
+          });
+
+          if (checkin) {
+            const checkinTime = new Date(checkin.data);
+            return {
+              day: dayName,
+              date: shortDate,
+              time: formatTime(checkinTime),
+              mood: checkin.emocao,
+              emoji: checkin.emocao === "happy" ? "😀" : checkin.emocao === "neutral" ? "😐" : "😢",
+              hasCheckin: true,
+              observacoes: checkin.observacoes
+            };
+          }
+
+          return {
+            day: dayName,
+            date: shortDate,
+            time: null,
+            mood: null,
+            emoji: "⚪",
+            hasCheckin: false,
+            observacoes: null
+          };
+        });
+
+        setWeeklyData(formattedData);
+      } catch (error) {
+        console.error('Erro:', error);
+        setWeeklyData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadWeeklyData();
+  }, [selectedChild]);
+
+  const generateInsights = () => {
+    const insights = [];
+    const checkedInDays = weeklyData.filter(day => day.hasCheckin);
+    const sadDays = checkedInDays.filter(day => day.mood === "sad");
+    const happyDays = checkedInDays.filter(day => day.mood === "happy");
+
+    // Verificar tristeza contínua
+    if (sadDays.length >= 2) {
+      insights.push({
+        type: "warning",
+        title: "Dias de tristeza",
+        description: `${selectedChild?.nome || 'A criança'} relatou tristeza em ${sadDays.length} dias esta semana`,
+        suggestion: "Considere conversar sobre o que pode estar incomodando"
+      });
     }
-  ];
+
+    // Verificar dias felizes
+    if (happyDays.length >= 3) {
+      insights.push({
+        type: "positive",
+        title: "Semana positiva",
+        description: `${selectedChild?.nome || 'A criança'} teve ${happyDays.length} dias felizes esta semana`,
+        suggestion: "Continue incentivando as atividades que trazem alegria"
+      });
+    }
+
+    return insights;
+  };
 
   const getMoodCount = (targetMood: string) => {
-    return weeklyData.filter(day => day.mood === targetMood).length;
+    return weeklyData.filter(day => day.mood === targetMood && day.hasCheckin).length;
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="p-4 flex items-center bg-card shadow-card">
+          <button 
+            onClick={() => onNavigate('dashboard')}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Voltar ao Dashboard
+          </button>
+        </div>
+        <div className="max-w-4xl mx-auto p-4 py-8 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-4xl mb-4">📊</div>
+            <p className="text-muted-foreground">Carregando relatório...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedChild) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="p-4 flex items-center bg-card shadow-card">
+          <button 
+            onClick={() => onNavigate('dashboard')}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Voltar ao Dashboard
+          </button>
+        </div>
+        <div className="max-w-4xl mx-auto p-4 py-8 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-4xl mb-4">👶</div>
+            <h2 className="text-xl font-semibold mb-2">Nenhuma criança selecionada</h2>
+            <p className="text-muted-foreground">Selecione uma criança no dashboard para ver os relatórios.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -55,7 +187,7 @@ const Reports = ({ onNavigate }: ReportsProps) => {
         <div className="text-center animate-fade-in">
           <h1 className="text-3xl font-bold mb-2">📊 Relatório Semanal</h1>
           <p className="text-muted-foreground">
-            7 a 13 de Janeiro • Sofia
+            {formatDateRange(currentWeek.start, currentWeek.end)} • {selectedChild.nome}
           </p>
         </div>
 
@@ -73,17 +205,29 @@ const Reports = ({ onNavigate }: ReportsProps) => {
                 <div key={index} className="text-center">
                   <div className="text-4xl mb-2">{day.emoji}</div>
                   <div className="text-sm font-medium mb-1">{day.day}</div>
-                  <Badge 
-                    variant={
-                      day.mood === "happy" ? "secondary" : 
-                      day.mood === "neutral" ? "outline" : 
-                      "destructive"
-                    }
-                    className="text-xs"
-                  >
-                    {day.mood === "happy" ? "Feliz" : 
-                     day.mood === "neutral" ? "Neutro" : "Triste"}
-                  </Badge>
+                  <div className="text-xs text-muted-foreground mb-1">{day.date}</div>
+                  {day.hasCheckin ? (
+                    <>
+                      <Badge 
+                        variant={
+                          day.mood === "happy" ? "secondary" : 
+                          day.mood === "neutral" ? "outline" : 
+                          "destructive"
+                        }
+                        className="text-xs mb-1"
+                      >
+                        {day.mood === "happy" ? "Feliz" : 
+                         day.mood === "neutral" ? "Neutro" : "Triste"}
+                      </Badge>
+                      <div className="text-xs text-muted-foreground">
+                        {day.time}
+                      </div>
+                    </>
+                  ) : (
+                    <Badge variant="outline" className="text-xs opacity-50">
+                      Sem check-in
+                    </Badge>
+                  )}
                 </div>
               ))}
             </div>
@@ -115,7 +259,7 @@ const Reports = ({ onNavigate }: ReportsProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {insights.map((insight, index) => (
+            {generateInsights().map((insight, index) => (
               <div 
                 key={index}
                 className={`p-4 rounded-xl border-l-4 ${

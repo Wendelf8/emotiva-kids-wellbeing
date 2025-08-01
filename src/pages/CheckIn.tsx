@@ -1,45 +1,99 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EmotivaButton from "@/components/EmotivaButton";
 import EmojiSelector from "@/components/EmojiSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Moon, AlertTriangle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { formatTime } from "@/utils/dateUtils";
+import { useAppContext } from "@/contexts/AppContext";
 
 interface CheckInProps {
   onNavigate: (page: string) => void;
 }
 
 const CheckIn = ({ onNavigate }: CheckInProps) => {
+  const { selectedChild } = useAppContext();
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    mood: "",
-    sleep: "",
-    problems: "",
-    comments: ""
+    emocao: "",
+    dormiu_bem: null as boolean | null,
+    aconteceu_algo_ruim: null as boolean | null,
+    comentario: ""
   });
   const { toast } = useToast();
 
   const handleMoodSelect = (mood: string) => {
-    setFormData(prev => ({ ...prev, mood }));
+    setFormData(prev => ({ ...prev, emocao: mood }));
   };
 
-  const handleSubmit = () => {
-    // Simular envio
-    toast({
-      title: "Check-in realizado! ✨",
-      description: "Obrigado por compartilhar como você está se sentindo.",
-    });
-    onNavigate('dashboard');
+  const handleSubmit = async () => {
+    if (!selectedChild) {
+      toast({
+        title: "Erro",
+        description: "Nenhuma criança selecionada.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const checkInData = {
+        crianca_id: selectedChild.id,
+        emocao: formData.emocao,
+        observacoes: JSON.stringify({
+          dormiu_bem: formData.dormiu_bem,
+          aconteceu_algo_ruim: formData.aconteceu_algo_ruim,
+          comentario: formData.comentario
+        }),
+        intensidade: formData.emocao === "happy" ? 5 : formData.emocao === "neutral" ? 3 : 1,
+        data: new Date().toISOString()
+      };
+
+      const { error } = await (supabase as any)
+        .from('checkins_emocionais')
+        .insert([checkInData]);
+
+      if (error) {
+        console.error('Erro ao salvar check-in:', error);
+        toast({
+          title: "Erro ao salvar",
+          description: "Não foi possível salvar o check-in. Tente novamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const now = new Date();
+      toast({
+        title: "Check-in realizado! ✨",
+        description: `Check-in de ${selectedChild.nome} feito com sucesso às ${formatTime(now)}`,
+      });
+      
+      onNavigate('dashboard');
+    } catch (error) {
+      console.error('Erro:', error);
+      toast({
+        title: "Erro",
+        description: "Algo deu errado. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const canProceed = () => {
     switch (step) {
-      case 1: return formData.mood !== "";
-      case 2: return formData.sleep !== "";
-      case 3: return formData.problems !== "";
+      case 1: return formData.emocao !== "";
+      case 2: return formData.dormiu_bem !== null;
+      case 3: return formData.aconteceu_algo_ruim !== null;
       default: return true;
     }
   };
@@ -81,9 +135,9 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
               {step === 4 && "💭"}
             </div>
             <CardTitle className="text-2xl">
-              {step === 1 && "Como você está se sentindo hoje?"}
-              {step === 2 && "Você dormiu bem?"}
-              {step === 3 && "Algo ruim aconteceu hoje?"}
+              {step === 1 && `Como ${selectedChild?.nome || 'você'} está se sentindo hoje?`}
+              {step === 2 && `${selectedChild?.nome || 'Você'} dormiu bem?`}
+              {step === 3 && `Algo ruim aconteceu hoje com ${selectedChild?.nome || 'você'}?`}
               {step === 4 && "Quer nos contar mais alguma coisa?"}
             </CardTitle>
           </CardHeader>
@@ -93,7 +147,7 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
             {step === 1 && (
               <div className="space-y-6">
                 <EmojiSelector 
-                  selectedMood={formData.mood}
+                  selectedMood={formData.emocao}
                   onMoodSelect={handleMoodSelect}
                   size="lg"
                 />
@@ -103,17 +157,16 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
             {/* Passo 2: Sono */}
             {step === 2 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {[
-                    { value: "yes", label: "Sim", emoji: "😴" },
-                    { value: "kinda", label: "Mais ou menos", emoji: "😪" },
-                    { value: "no", label: "Não", emoji: "😵‍💫" }
+                    { value: true, label: "Sim", emoji: "😴" },
+                    { value: false, label: "Não", emoji: "😵‍💫" }
                   ].map((option) => (
                     <button
-                      key={option.value}
-                      onClick={() => setFormData(prev => ({ ...prev, sleep: option.value }))}
+                      key={option.value.toString()}
+                      onClick={() => setFormData(prev => ({ ...prev, dormiu_bem: option.value }))}
                       className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                        formData.sleep === option.value
+                        formData.dormiu_bem === option.value
                           ? "border-primary bg-primary-soft shadow-soft"
                           : "border-border hover:border-primary/50 hover:bg-primary-soft/30"
                       }`}
@@ -131,16 +184,14 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { value: "no", label: "Não", emoji: "😊" },
-                    { value: "family", label: "Problemas em casa", emoji: "🏠" },
-                    { value: "school", label: "Problemas na escola", emoji: "🏫" },
-                    { value: "friends", label: "Problemas com amigos", emoji: "👥" }
+                    { value: false, label: "Não", emoji: "😊" },
+                    { value: true, label: "Sim, algo ruim aconteceu", emoji: "😔" }
                   ].map((option) => (
                     <button
-                      key={option.value}
-                      onClick={() => setFormData(prev => ({ ...prev, problems: option.value }))}
+                      key={option.value.toString()}
+                      onClick={() => setFormData(prev => ({ ...prev, aconteceu_algo_ruim: option.value }))}
                       className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                        formData.problems === option.value
+                        formData.aconteceu_algo_ruim === option.value
                           ? "border-primary bg-primary-soft shadow-soft"
                           : "border-border hover:border-primary/50 hover:bg-primary-soft/30"
                       }`}
@@ -160,13 +211,13 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
                   <Label htmlFor="comments" className="text-base">
                     Comentários (opcional)
                   </Label>
-                  <Textarea
-                    id="comments"
-                    placeholder="Conte-nos um pouco mais sobre como foi seu dia..."
-                    value={formData.comments}
-                    onChange={(e) => setFormData(prev => ({ ...prev, comments: e.target.value }))}
-                    className="mt-2 min-h-[120px] rounded-xl"
-                  />
+                    <Textarea
+                      id="comments"
+                      placeholder="Conte-nos um pouco mais sobre como foi seu dia..."
+                      value={formData.comentario}
+                      onChange={(e) => setFormData(prev => ({ ...prev, comentario: e.target.value }))}
+                      className="mt-2 min-h-[120px] rounded-xl"
+                    />
                   <p className="text-sm text-muted-foreground mt-2">
                     Sua privacidade é importante para nós. Apenas você e seus responsáveis podem ver isso.
                   </p>
@@ -179,22 +230,18 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">Humor</Badge>
-                        <span>{formData.mood === "happy" ? "😀 Feliz" : formData.mood === "neutral" ? "😐 Neutro" : "😢 Triste"}</span>
+                        <span>{formData.emocao === "happy" ? "😀 Feliz" : formData.emocao === "neutral" ? "😐 Neutro" : "😢 Triste"}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">Sono</Badge>
                         <span>
-                          {formData.sleep === "yes" ? "😴 Dormiu bem" : 
-                           formData.sleep === "kinda" ? "😪 Mais ou menos" : "😵‍💫 Não dormiu bem"}
+                          {formData.dormiu_bem === true ? "😴 Dormiu bem" : "😵‍💫 Não dormiu bem"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">Problemas</Badge>
                         <span>
-                          {formData.problems === "no" ? "😊 Nenhum problema" :
-                           formData.problems === "family" ? "🏠 Problemas em casa" :
-                           formData.problems === "school" ? "🏫 Problemas na escola" :
-                           "👥 Problemas com amigos"}
+                          {formData.aconteceu_algo_ruim === false ? "😊 Nenhum problema" : "😔 Algo ruim aconteceu"}
                         </span>
                       </div>
                     </div>
@@ -220,9 +267,10 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
                   variant="primary"
                   size="lg"
                   onClick={handleSubmit}
+                  disabled={isSubmitting}
                   className="flex-1"
                 >
-                  ✨ Finalizar Check-in
+                  {isSubmitting ? "Salvando..." : "✨ Finalizar Check-in"}
                 </EmotivaButton>
               )}
             </div>
