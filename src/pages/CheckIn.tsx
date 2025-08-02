@@ -45,16 +45,19 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
 
     try {
       const checkInData = {
-        child_id: selectedChild.id,
+        crianca_id: selectedChild.id,
         emocao: formData.emocao,
-        dormiu_bem: formData.dormiu_bem,
-        aconteceu_algo_ruim: formData.aconteceu_algo_ruim,
-        comentario: formData.comentario,
-        data_checkin: new Date().toISOString()
+        observacoes: JSON.stringify({
+          dormiu_bem: formData.dormiu_bem,
+          aconteceu_algo_ruim: formData.aconteceu_algo_ruim,
+          comentario: formData.comentario
+        }),
+        intensidade: formData.emocao === "happy" ? 5 : formData.emocao === "neutral" ? 3 : 1,
+        data: new Date().toISOString()
       };
 
       const { error } = await supabase
-        .from('checkins')
+        .from('checkins_emocionais')
         .insert([checkInData]);
 
       if (error) {

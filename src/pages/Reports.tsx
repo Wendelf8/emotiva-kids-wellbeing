@@ -29,7 +29,7 @@ const Reports = ({ onNavigate }: ReportsProps) => {
       try {
         const { startOfWeek, endOfWeek } = getCurrentWeekDates();
         
-        const { data: checkins, error } = await (supabase as any)
+        const { data: checkins, error } = await supabase
           .from('checkins_emocionais')
           .select('*')
           .eq('crianca_id', selectedChild.id)
