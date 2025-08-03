@@ -33,9 +33,9 @@ const Reports = ({ onNavigate }: ReportsProps) => {
           .from('checkins_emocionais')
           .select('*')
           .eq('crianca_id', selectedChild.id)
-          .gte('data', startOfWeek.toISOString())
-          .lte('data', endOfWeek.toISOString())
-          .order('data', { ascending: true });
+          .gte('data_escolhida', startOfWeek.toISOString().split('T')[0])
+          .lte('data_escolhida', endOfWeek.toISOString().split('T')[0])
+          .order('data_escolhida', { ascending: true });
 
         if (error) {
           console.error('Erro ao buscar check-ins:', error);
@@ -51,20 +51,24 @@ const Reports = ({ onNavigate }: ReportsProps) => {
           
           // Encontrar check-in para este dia
           const checkin = checkins?.find(c => {
-            const checkinDate = new Date(c.data);
+            const checkinDate = new Date(c.data_escolhida);
             return checkinDate.toDateString() === date.toDateString();
           });
 
           if (checkin) {
-            const checkinTime = new Date(checkin.data);
+            const checkinTime = checkin.created_at ? new Date(checkin.created_at) : new Date(checkin.data);
             return {
               day: dayName,
               date: shortDate,
               time: formatTime(checkinTime),
-              mood: checkin.emocao,
-              emoji: checkin.emocao === "happy" ? "😀" : checkin.emocao === "neutral" ? "😐" : "😢",
+              mood: checkin.como_se_sente || checkin.emocao,
+              emoji: (checkin.como_se_sente || checkin.emocao) === "happy" ? "😀" : 
+                     (checkin.como_se_sente || checkin.emocao) === "neutral" ? "😐" : "😢",
               hasCheckin: true,
-              observacoes: checkin.observacoes
+              observacoes: checkin.observacoes,
+              dormiu_bem: checkin.dormiu_bem,
+              algo_ruim: checkin.algo_ruim,
+              resumo: checkin.resumo
             };
           }
 
@@ -206,7 +210,7 @@ const Reports = ({ onNavigate }: ReportsProps) => {
                   <div className="text-4xl mb-2">{day.emoji}</div>
                   <div className="text-sm font-medium mb-1">{day.day}</div>
                   <div className="text-xs text-muted-foreground mb-1">{day.date}</div>
-                  {day.hasCheckin ? (
+                      {day.hasCheckin ? (
                     <>
                       <Badge 
                         variant={
@@ -222,6 +226,11 @@ const Reports = ({ onNavigate }: ReportsProps) => {
                       <div className="text-xs text-muted-foreground">
                         {day.time}
                       </div>
+                      {day.dormiu_bem !== undefined && (
+                        <div className="text-xs">
+                          {day.dormiu_bem ? "😴" : "😵‍💫"}
+                        </div>
+                      )}
                     </>
                   ) : (
                     <Badge variant="outline" className="text-xs opacity-50">
@@ -293,6 +302,58 @@ const Reports = ({ onNavigate }: ReportsProps) => {
           </CardContent>
         </Card>
 
+        {/* Detalhes dos check-ins */}
+        {weeklyData.filter(day => day.hasCheckin).length > 0 && (
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle>📝 Detalhes dos Check-ins</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {weeklyData.filter(day => day.hasCheckin).map((day, index) => (
+                <div key={index} className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium">{day.day} - {day.date}</h4>
+                    <Badge variant="outline">{day.time}</Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Humor:</span>
+                      <div className="flex items-center gap-1 mt-1">
+                        {day.emoji}
+                        <span>{day.mood === "happy" ? "Feliz" : day.mood === "neutral" ? "Neutro" : "Triste"}</span>
+                      </div>
+                    </div>
+                    {day.dormiu_bem !== undefined && (
+                      <div>
+                        <span className="font-medium">Sono:</span>
+                        <div className="flex items-center gap-1 mt-1">
+                          {day.dormiu_bem ? "😴" : "😵‍💫"}
+                          <span>{day.dormiu_bem ? "Bem" : "Mal"}</span>
+                        </div>
+                      </div>
+                    )}
+                    {day.algo_ruim !== undefined && (
+                      <div>
+                        <span className="font-medium">Problemas:</span>
+                        <div className="flex items-center gap-1 mt-1">
+                          {day.algo_ruim ? "😔" : "😊"}
+                          <span>{day.algo_ruim ? "Sim" : "Não"}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {day.resumo && (
+                    <div className="mt-3 p-3 bg-card rounded-lg">
+                      <span className="font-medium text-sm">Comentário:</span>
+                      <p className="text-sm mt-1">{day.resumo}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Sugestões de conversa */}
         <Card className="shadow-card">
           <CardHeader>
@@ -302,17 +363,17 @@ const Reports = ({ onNavigate }: ReportsProps) => {
             <div className="space-y-3">
               <div className="p-3 bg-primary-soft/30 rounded-lg">
                 <p className="text-sm">
-                  "Como foi seu dia na escola na quarta e quinta-feira? Aconteceu algo especial?"
+                  "Como foi seu dia na escola? Aconteceu algo especial com {selectedChild?.nome}?"
                 </p>
               </div>
               <div className="p-3 bg-primary-soft/30 rounded-lg">
                 <p className="text-sm">
-                  "O que você mais gostou de fazer no fim de semana?"
+                  "O que {selectedChild?.nome} mais gostou de fazer esta semana?"
                 </p>
               </div>
               <div className="p-3 bg-primary-soft/30 rounded-lg">
                 <p className="text-sm">
-                  "Há algo que está te deixando preocupado(a) ou triste?"
+                  "Há algo que está deixando {selectedChild?.nome} preocupado(a) ou triste?"
                 </p>
               </div>
             </div>

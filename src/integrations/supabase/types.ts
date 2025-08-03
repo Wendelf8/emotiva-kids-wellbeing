@@ -37,28 +37,46 @@ export type Database = {
       }
       checkins_emocionais: {
         Row: {
+          algo_ruim: boolean | null
+          como_se_sente: string | null
+          created_at: string | null
           crianca_id: string | null
           data: string | null
+          data_escolhida: string | null
+          dormiu_bem: boolean | null
           emocao: string | null
           id: string
           intensidade: number | null
           observacoes: string | null
+          resumo: string | null
         }
         Insert: {
+          algo_ruim?: boolean | null
+          como_se_sente?: string | null
+          created_at?: string | null
           crianca_id?: string | null
           data?: string | null
+          data_escolhida?: string | null
+          dormiu_bem?: boolean | null
           emocao?: string | null
           id?: string
           intensidade?: number | null
           observacoes?: string | null
+          resumo?: string | null
         }
         Update: {
+          algo_ruim?: boolean | null
+          como_se_sente?: string | null
+          created_at?: string | null
           crianca_id?: string | null
           data?: string | null
+          data_escolhida?: string | null
+          dormiu_bem?: boolean | null
           emocao?: string | null
           id?: string
           intensidade?: number | null
           observacoes?: string | null
+          resumo?: string | null
         }
         Relationships: []
       }
