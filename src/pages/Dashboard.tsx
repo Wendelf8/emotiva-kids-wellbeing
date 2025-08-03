@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import EmotivaButton from "@/components/EmotivaButton";
 import MoodCard from "@/components/MoodCard";
+import CheckinAlerts from "@/components/CheckinAlerts";
+import ChildManagementMenu from "@/components/ChildManagementMenu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, Calendar, TrendingUp, BookOpen, Settings, Menu, MoreVertical, ChevronDown, User, LogOut, HelpCircle, BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +35,24 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
   const [editedEmail, setEditedEmail] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
+
+  const refreshChildren = async () => {
+    if (user && userProfile?.tipo_usuario === 'pai') {
+      const { data: childrenData } = await supabase
+        .from('criancas')
+        .select('*')
+        .eq('usuario_id', user.id)
+        .order('criado_em', { ascending: true });
+      
+      if (childrenData) {
+        setChildren(childrenData);
+        // Se a criança selecionada foi deletada, selecionar a primeira disponível
+        if (selectedChild && !childrenData.find(c => c.id === selectedChild.id)) {
+          setSelectedChild(childrenData.length > 0 ? childrenData[0] : null);
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     const getUser = async () => {
@@ -333,25 +353,37 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
                 : 'Como está o seu dia hoje?'
               }
             </p>
-            {children.length > 1 && (
-              <Select value={selectedChild?.id} onValueChange={(value) => {
-                const child = children.find(c => c.id === value);
-                setSelectedChild(child);
-              }}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Selecionar criança" />
-                </SelectTrigger>
-                <SelectContent>
-                  {children.map((child) => (
-                    <SelectItem key={child.id} value={child.id}>
-                      {child.nome} ({child.idade} anos)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <div className="flex items-center gap-3">
+              {children.length > 1 && (
+                <Select value={selectedChild?.id} onValueChange={(value) => {
+                  const child = children.find(c => c.id === value);
+                  setSelectedChild(child);
+                }}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Selecionar criança" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {children.map((child) => (
+                      <SelectItem key={child.id} value={child.id}>
+                        {child.nome} ({child.idade} anos)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {selectedChild && (
+                <ChildManagementMenu 
+                  child={selectedChild}
+                  onChildUpdated={refreshChildren}
+                  onChildDeleted={refreshChildren}
+                />
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Alertas de Check-in */}
+        <CheckinAlerts children={children} />
 
         {/* Grid principal */}
         <div className="grid lg:grid-cols-3 gap-6">
