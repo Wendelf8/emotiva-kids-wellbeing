@@ -204,41 +204,55 @@ const Reports = ({ onNavigate }: ReportsProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-7 gap-4 mb-6">
-              {weeklyData.map((day, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-4xl mb-2">{day.emoji}</div>
-                  <div className="text-sm font-medium mb-1">{day.day}</div>
-                  <div className="text-xs text-muted-foreground mb-1">{day.date}</div>
-                      {day.hasCheckin ? (
-                    <>
-                      <Badge 
-                        variant={
-                          day.mood === "happy" ? "secondary" : 
-                          day.mood === "neutral" ? "outline" : 
-                          "destructive"
-                        }
-                        className="text-xs mb-1"
-                      >
-                        {day.mood === "happy" ? "Feliz" : 
-                         day.mood === "neutral" ? "Neutro" : "Triste"}
-                      </Badge>
-                      <div className="text-xs text-muted-foreground">
-                        {day.time}
-                      </div>
-                      {day.dormiu_bem !== undefined && (
-                        <div className="text-xs">
-                          {day.dormiu_bem ? "😴" : "😵‍💫"}
+            <div className="overflow-x-auto pb-2">
+              <div className="flex gap-3 min-w-fit px-2">
+                {weeklyData.map((day, index) => (
+                  <div 
+                    key={index} 
+                    className={`flex-shrink-0 w-24 p-3 rounded-xl border-2 text-center transition-all ${
+                      day.hasCheckin 
+                        ? 'border-primary/20 bg-primary/5 shadow-sm' 
+                        : 'border-muted bg-muted/20'
+                    }`}
+                  >
+                    {/* Emoji do humor */}
+                    <div className={`text-5xl mb-2 ${!day.hasCheckin ? 'opacity-40' : ''}`}>
+                      {day.emoji}
+                    </div>
+                    
+                    {/* Nome do dia abreviado */}
+                    <div className="text-xs font-semibold text-foreground mb-1">
+                      {day.day.slice(0, 3).toUpperCase()}
+                    </div>
+                    
+                    {/* Data */}
+                    <div className="text-xs text-muted-foreground mb-2">
+                      {day.date}
+                    </div>
+                    
+                    {/* Status do check-in */}
+                    {day.hasCheckin ? (
+                      <div className="space-y-1">
+                        {/* Horário */}
+                        <div className="text-xs font-medium text-primary">
+                          {day.time}
                         </div>
-                      )}
-                    </>
-                  ) : (
-                    <Badge variant="outline" className="text-xs opacity-50">
-                      Sem check-in
-                    </Badge>
-                  )}
-                </div>
-              ))}
+                        
+                        {/* Indicador de sono se disponível */}
+                        {day.dormiu_bem !== undefined && (
+                          <div className="text-xs">
+                            {day.dormiu_bem ? "😴" : "😵‍💫"}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground/60">
+                        –
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Estatísticas */}
