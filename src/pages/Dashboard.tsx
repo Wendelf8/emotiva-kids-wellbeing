@@ -298,7 +298,7 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
                     className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2"
                   >
                     <User className="w-4 h-4" />
-                    Gerenciar Crianças
+                    Adicionar criança
                   </button>
                 </div>
               </PopoverContent>
