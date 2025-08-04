@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings, Edit, Trash2, Plus } from "lucide-react";
+import { Settings, Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,12 +18,9 @@ interface ChildManagementMenuProps {
 
 const ChildManagementMenu = ({ child, onChildUpdated, onChildDeleted }: ChildManagementMenuProps) => {
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [editName, setEditName] = useState(child?.nome || "");
   const [editAge, setEditAge] = useState(child?.idade || "");
-  const [newName, setNewName] = useState("");
-  const [newAge, setNewAge] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -77,60 +74,6 @@ const ChildManagementMenu = ({ child, onChildUpdated, onChildDeleted }: ChildMan
     }
   };
 
-  const handleAddChild = async () => {
-    if (!newName.trim()) {
-      toast({
-        title: "Erro",
-        description: "O nome é obrigatório.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!newAge || Number(newAge) < 1 || Number(newAge) > 18) {
-      toast({
-        title: "Erro",
-        description: "A idade deve estar entre 1 e 18 anos.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { error } = await supabase
-        .from('criancas')
-        .insert({
-          nome: newName.trim(),
-          idade: Number(newAge),
-          usuario_id: user.id
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso!",
-        description: "Nova criança adicionada com sucesso.",
-      });
-
-      setShowAddDialog(false);
-      setNewName("");
-      setNewAge("");
-      onChildUpdated();
-    } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao adicionar criança.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleDeleteChild = async () => {
     setIsLoading(true);
@@ -186,10 +129,6 @@ const ChildManagementMenu = ({ child, onChildUpdated, onChildDeleted }: ChildMan
           <DropdownMenuItem onClick={openEditDialog}>
             <Edit className="mr-2 h-4 w-4" />
             Editar dados da criança
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowAddDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar nova criança
           </DropdownMenuItem>
           <DropdownMenuItem 
             onClick={() => setShowDeleteDialog(true)}
@@ -248,52 +187,6 @@ const ChildManagementMenu = ({ child, onChildUpdated, onChildDeleted }: ChildMan
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Adição */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Adicionar nova criança</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-name">Nome</Label>
-              <Input
-                id="new-name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Digite o nome"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-age">Idade</Label>
-              <Select value={newAge.toString()} onValueChange={setNewAge}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a idade" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 18 }, (_, i) => i + 1).map((age) => (
-                    <SelectItem key={age} value={age.toString()}>
-                      {age} anos
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex gap-2 justify-end">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowAddDialog(false)}
-              disabled={isLoading}
-            >
-              Cancelar
-            </Button>
-            <Button onClick={handleAddChild} disabled={isLoading}>
-              {isLoading ? "Adicionando..." : "Adicionar criança"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Dialog de Confirmação de Exclusão */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
