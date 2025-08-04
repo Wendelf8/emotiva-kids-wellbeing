@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CheckinAlertsProps {
@@ -16,51 +17,55 @@ interface AlertData {
 
 const CheckinAlerts = ({ children }: CheckinAlertsProps) => {
   const [alerts, setAlerts] = useState<AlertData[]>([]);
+  const [minimizedAlerts, setMinimizedAlerts] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const fetchAlerts = async () => {
       if (!children || children.length === 0) return;
 
-      const threeDaysAgo = new Date();
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-      const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0];
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
       const alertsData: AlertData[] = [];
 
       for (const child of children) {
-        // Buscar o último check-in da criança nos últimos 3 dias
+        // Buscar o último check-in da criança
         const { data: checkins } = await supabase
           .from('checkins_emocionais')
           .select('*')
           .eq('crianca_id', child.id)
-          .gte('data_escolhida', threeDaysAgoStr)
-          .order('data_escolhida', { ascending: false })
+          .order('data', { ascending: false })
           .limit(1);
 
         if (checkins && checkins.length > 0) {
           const checkin = checkins[0];
-          const issues: string[] = [];
+          const checkinDate = new Date(checkin.data);
 
-          // Verificar condições preocupantes
-          if (checkin.emocao === 'sad' || checkin.como_se_sente === 'sad') {
-            issues.push('está se sentindo triste');
-          }
+          // Verificar se o check-in é de menos de 24 horas
+          if (checkinDate >= twentyFourHoursAgo) {
+            const issues: string[] = [];
 
-          if (checkin.dormiu_bem === false) {
-            issues.push('não dormiu bem');
-          }
+            // Verificar condições preocupantes
+            if (checkin.emocao === 'sad' || checkin.como_se_sente === 'sad') {
+              issues.push('está se sentindo triste');
+            }
 
-          if (checkin.algo_ruim === true) {
-            issues.push('algo ruim aconteceu');
-          }
+            if (checkin.dormiu_bem === false) {
+              issues.push('não dormiu bem');
+            }
 
-          // Se há problemas, adicionar ao alerta
-          if (issues.length > 0) {
-            alertsData.push({
-              child,
-              checkin,
-              issues
-            });
+            if (checkin.algo_ruim === true) {
+              issues.push('algo ruim aconteceu');
+            }
+
+            // Se há problemas, adicionar ao alerta
+            if (issues.length > 0) {
+              alertsData.push({
+                child,
+                checkin,
+                issues
+              });
+            }
           }
         }
       }
@@ -70,6 +75,18 @@ const CheckinAlerts = ({ children }: CheckinAlertsProps) => {
 
     fetchAlerts();
   }, [children]);
+
+  const toggleMinimized = (index: number) => {
+    setMinimizedAlerts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
 
   if (alerts.length === 0) {
     return null;
@@ -94,20 +111,49 @@ const CheckinAlerts = ({ children }: CheckinAlertsProps) => {
             hour: '2-digit',
             minute: '2-digit'
           });
+          const isMinimized = minimizedAlerts.has(index);
+
+          if (isMinimized) {
+            return (
+              <div
+                key={index}
+                onClick={() => toggleMinimized(index)}
+                className="flex items-center gap-2 p-3 bg-orange-100 border border-orange-200 rounded-lg cursor-pointer hover:bg-orange-150 transition-colors"
+              >
+                <AlertTriangle className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                <span className="text-orange-800 font-medium flex-1">
+                  {alert.child.nome}
+                </span>
+                <ChevronDown className="h-4 w-4 text-orange-600" />
+              </div>
+            );
+          }
 
           return (
             <Alert key={index} className="border-orange-200 bg-orange-50">
-              <AlertTriangle className="h-4 w-4 text-orange-600" />
-              <AlertDescription className="text-orange-800">
-                <div className="space-y-1">
-                  <p className="font-medium">
-                    🚨 {alert.child.nome} {alert.issues.join(', ')}.
-                  </p>
-                  <p className="text-sm text-orange-600">
-                    Último check-in: {formattedDate} às {formattedTime}
-                  </p>
+              <div className="flex justify-between items-start">
+                <div className="flex gap-2 flex-1">
+                  <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                  <AlertDescription className="text-orange-800 flex-1">
+                    <div className="space-y-1">
+                      <p className="font-medium">
+                        🚨 {alert.child.nome} {alert.issues.join(', ')}.
+                      </p>
+                      <p className="text-sm text-orange-600">
+                        Último check-in: {formattedDate} às {formattedTime}
+                      </p>
+                    </div>
+                  </AlertDescription>
                 </div>
-              </AlertDescription>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleMinimized(index)}
+                  className="h-8 w-8 p-0 text-orange-600 hover:bg-orange-100"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+              </div>
             </Alert>
           );
         })}
