@@ -128,6 +128,33 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_tokens: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          token: string
+          used: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          token: string
+          used?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          token?: string
+          used?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       perfis: {
         Row: {
           criado_em: string | null
@@ -202,6 +229,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_reset_tokens: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_complete_schema: {
         Args: Record<PropertyKey, never>
         Returns: Json

@@ -18,20 +18,18 @@ const NewPassword = ({ onNavigate }: NewPasswordProps) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Verificar se há uma sessão de recuperação de senha
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Sessão inválida",
-          description: "Use o link do e-mail para acessar esta página.",
-          variant: "destructive",
-        });
-        onNavigate('login');
-      }
-    };
-
-    checkSession();
+    // Verificar se há um token na URL
+    const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    const token = urlParams.get('token');
+    
+    if (!token) {
+      toast({
+        title: "Token inválido",
+        description: "Use o link do e-mail para acessar esta página.",
+        variant: "destructive",
+      });
+      onNavigate('login');
+    }
   }, [onNavigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,14 +65,38 @@ const NewPassword = ({ onNavigate }: NewPasswordProps) => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password
+      // Obter token da URL
+      const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+      const token = urlParams.get('token');
+
+      if (!token) {
+        toast({
+          title: "Token inválido",
+          description: "Use o link do e-mail para acessar esta página.",
+          variant: "destructive",
+        });
+        onNavigate('login');
+        return;
+      }
+
+      // Usar nossa edge function personalizada
+      const response = await fetch('https://hifksggqkimdfqlhcosx.supabase.co/functions/v1/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          token, 
+          newPassword: password 
+        }),
       });
 
-      if (error) {
+      const result = await response.json();
+
+      if (!response.ok) {
         toast({
           title: "Erro ao atualizar senha",
-          description: error.message,
+          description: result.error || "Erro desconhecido",
           variant: "destructive",
         });
       } else {
@@ -83,13 +105,12 @@ const NewPassword = ({ onNavigate }: NewPasswordProps) => {
           description: "Sua senha foi alterada. Faça login com a nova senha.",
         });
         
-        // Fazer logout para garantir que o usuário faça login novamente
-        await supabase.auth.signOut();
+        // Redirecionar para login
         onNavigate('login');
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Erro inesperado",
+        title: "Erro de conexão",
         description: "Tente novamente mais tarde.",
         variant: "destructive",
       });

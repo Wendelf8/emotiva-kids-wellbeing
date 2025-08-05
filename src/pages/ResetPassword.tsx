@@ -63,21 +63,29 @@ const ResetPassword = ({ onNavigate }: ResetPasswordProps) => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/#new-password`,
+      // Usar nossa edge function personalizada
+      const response = await fetch('https://hifksggqkimdfqlhcosx.supabase.co/functions/v1/send-password-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
       });
 
-      if (error) {
-        // Exibir mensagem exata do erro
+      const result = await response.json();
+
+      if (!response.ok) {
         toast({
           title: "Erro ao enviar e-mail",
-          description: error.message,
+          description: result.error || "Erro desconhecido",
           variant: "destructive",
         });
         
-        // Se for rate limit, adicionar cooldown de 60 segundos
-        if (error.message.toLowerCase().includes('rate limit')) {
-          setCooldown(60);
+        // Se for rate limit, adicionar cooldown maior
+        if (result.error?.toLowerCase().includes('rate limit')) {
+          setCooldown(300); // 5 minutos
+        } else {
+          setCooldown(60); // 1 minuto para outros erros
         }
       } else {
         // Sucesso - mostrar tela de confirmação
@@ -87,17 +95,18 @@ const ResetPassword = ({ onNavigate }: ResetPasswordProps) => {
           description: "Verifique seu e-mail para redefinir a senha.",
         });
         
-        // Definir cooldown de 5 segundos para evitar spam
-        setCooldown(5);
+        // Definir cooldown de 30 segundos para evitar spam
+        setCooldown(30);
       }
     } catch (error: any) {
-      // Capturar erros de rede ou outros erros inesperados
+      // Capturar erros de rede
       const errorMessage = error?.message || "Erro de conexão. Verifique sua internet e tente novamente.";
       toast({
-        title: "Erro inesperado",
+        title: "Erro de conexão",
         description: errorMessage,
         variant: "destructive",
       });
+      setCooldown(30);
     } finally {
       setLoading(false);
     }
