@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EmotivaButton from "@/components/EmotivaButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,15 +15,46 @@ const ResetPassword = ({ onNavigate }: ResetPasswordProps) => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const { toast } = useToast();
+
+  // Cooldown timer para evitar múltiplos envios
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Verificar se está em cooldown
+    if (cooldown > 0) {
+      toast({
+        title: "Aguarde",
+        description: `Aguarde ${cooldown} segundos antes de tentar novamente.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validar e-mail
     if (!email) {
       toast({
         title: "Campo obrigatório",
         description: "Por favor, digite seu e-mail.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar formato do e-mail
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "E-mail inválido",
+        description: "Por favor, digite um e-mail válido.",
         variant: "destructive",
       });
       return;
@@ -37,18 +68,34 @@ const ResetPassword = ({ onNavigate }: ResetPasswordProps) => {
       });
 
       if (error) {
+        // Exibir mensagem exata do erro
         toast({
           title: "Erro ao enviar e-mail",
           description: error.message,
           variant: "destructive",
         });
+        
+        // Se for rate limit, adicionar cooldown de 60 segundos
+        if (error.message.toLowerCase().includes('rate limit')) {
+          setCooldown(60);
+        }
       } else {
+        // Sucesso - mostrar tela de confirmação
         setEmailSent(true);
+        toast({
+          title: "E-mail enviado!",
+          description: "Verifique seu e-mail para redefinir a senha.",
+        });
+        
+        // Definir cooldown de 5 segundos para evitar spam
+        setCooldown(5);
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Capturar erros de rede ou outros erros inesperados
+      const errorMessage = error?.message || "Erro de conexão. Verifique sua internet e tente novamente.";
       toast({
         title: "Erro inesperado",
-        description: "Tente novamente mais tarde.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -144,9 +191,14 @@ const ResetPassword = ({ onNavigate }: ResetPasswordProps) => {
                 variant="primary" 
                 size="lg" 
                 className="w-full"
-                disabled={loading}
+                disabled={loading || cooldown > 0}
               >
-                {loading ? "Enviando..." : "Enviar link de redefinição"}
+                {loading 
+                  ? "Enviando..." 
+                  : cooldown > 0 
+                    ? `Aguarde ${cooldown}s` 
+                    : "Enviar link de redefinição"
+                }
               </EmotivaButton>
             </form>
           </CardContent>
