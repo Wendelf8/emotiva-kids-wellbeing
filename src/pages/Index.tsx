@@ -7,6 +7,8 @@ import CheckIn from "./CheckIn";
 import Reports from "./Reports";
 import Support from "./Support";
 import AddChild from "./AddChild";
+import ResetPassword from "./ResetPassword";
+import NewPassword from "./NewPassword";
 import { supabase } from "@/integrations/supabase/client";
 import { AppContextProvider } from "@/contexts/AppContext";
 
@@ -87,6 +89,10 @@ const Index = () => {
         return <Login onNavigate={handleNavigate} />;
       case "register":
         return <Register onNavigate={handleNavigate} />;
+      case "reset-password":
+        return <ResetPassword onNavigate={handleNavigate} />;
+      case "new-password":
+        return <NewPassword onNavigate={handleNavigate} />;
       case "dashboard":
         return <Dashboard onNavigate={handleNavigate} />;
       case "checkin":

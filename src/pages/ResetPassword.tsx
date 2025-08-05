@@ -3,44 +3,47 @@ import EmotivaButton from "@/components/EmotivaButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Mail, Lock } from "lucide-react";
+import { ArrowLeft, Mail, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface LoginProps {
+interface ResetPasswordProps {
   onNavigate: (page: string) => void;
 }
 
-const Login = ({ onNavigate }: LoginProps) => {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: ""
-  });
+const ResetPassword = ({ onNavigate }: ResetPasswordProps) => {
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, digite seu e-mail.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/#new-password`,
       });
 
       if (error) {
         toast({
-          title: "Erro ao fazer login",
+          title: "Erro ao enviar e-mail",
           description: error.message,
           variant: "destructive",
         });
       } else {
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Redirecionando para o dashboard...",
-        });
-        onNavigate('dashboard');
+        setEmailSent(true);
       }
     } catch (error) {
       toast({
@@ -53,26 +56,68 @@ const Login = ({ onNavigate }: LoginProps) => {
     }
   };
 
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Header */}
+        <div className="p-4 flex items-center">
+          <button 
+            onClick={() => onNavigate('login')}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Voltar ao login
+          </button>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center px-4 py-8">
+          <Card className="w-full max-w-md shadow-card">
+            <CardHeader className="text-center">
+              <div className="text-4xl mb-4">
+                <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
+              </div>
+              <CardTitle className="text-2xl font-bold">E-mail enviado!</CardTitle>
+              <CardDescription>
+                Enviamos um link de redefinição para seu e-mail. Verifique sua caixa de entrada.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              <EmotivaButton 
+                variant="primary" 
+                size="lg" 
+                className="w-full"
+                onClick={() => onNavigate('login')}
+              >
+                Voltar ao login
+              </EmotivaButton>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <div className="p-4 flex items-center">
         <button 
-          onClick={() => onNavigate('welcome')}
+          onClick={() => onNavigate('login')}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-          Voltar
+          Voltar ao login
         </button>
       </div>
 
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <Card className="w-full max-w-md shadow-card">
           <CardHeader className="text-center">
-            <div className="text-4xl mb-4">💙</div>
-            <CardTitle className="text-2xl font-bold">Bem-vindo de volta!</CardTitle>
+            <div className="text-4xl mb-4">🔑</div>
+            <CardTitle className="text-2xl font-bold">Redefinir senha</CardTitle>
             <CardDescription>
-              Entre na sua conta Emotiva
+              Digite seu e-mail para receber um link de redefinição
             </CardDescription>
           </CardHeader>
 
@@ -86,24 +131,8 @@ const Login = ({ onNavigate }: LoginProps) => {
                     id="email"
                     type="email"
                     placeholder="seu@email.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="pl-10 h-12 rounded-xl"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="pl-10 h-12 rounded-xl"
                     required
                   />
@@ -117,28 +146,8 @@ const Login = ({ onNavigate }: LoginProps) => {
                 className="w-full"
                 disabled={loading}
               >
-                {loading ? "Entrando..." : "Entrar"}
+                {loading ? "Enviando..." : "Enviar link de redefinição"}
               </EmotivaButton>
-
-              <div className="text-center space-y-3">
-                <button
-                  type="button"
-                  onClick={() => onNavigate('reset-password')}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Esqueci minha senha
-                </button>
-                
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('register')}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Não tem conta? <span className="text-primary font-medium">Criar conta</span>
-                  </button>
-                </div>
-              </div>
             </form>
           </CardContent>
         </Card>
@@ -147,4 +156,4 @@ const Login = ({ onNavigate }: LoginProps) => {
   );
 };
 
-export default Login;
+export default ResetPassword;
