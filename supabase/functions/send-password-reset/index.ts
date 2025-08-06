@@ -77,12 +77,13 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // URL de redefinição
-    const resetUrl = `${Deno.env.get("SITE_URL")}/#new-password?token=${resetToken}`;
+    // URL de redefinição - usando a URL atual da aplicação
+    const siteUrl = Deno.env.get("SITE_URL") || "https://hifksggqkimdfqlhcosx.supabase.co";
+    const resetUrl = `${siteUrl}/#new-password?token=${resetToken}`;
 
     // Enviar e-mail
     const emailResponse = await resend.emails.send({
-      from: "Emotiva <noreply@yourdomain.com>", // Substitua pelo seu domínio
+      from: "Emotiva <noreply@resend.dev>", // Usando o domínio padrão do Resend
       to: [email],
       subject: "Redefinir senha - Emotiva",
       html: `
