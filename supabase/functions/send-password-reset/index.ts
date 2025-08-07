@@ -83,7 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Enviar e-mail
     const emailResponse = await resend.emails.send({
-      from: "Suporte Emotiva <suporte@appemotiva.com>",
+      from: "Emotiva <no-reply@appemotiva.com>",
       to: [email],
       subject: "Redefinir sua senha - Emotiva",
       html: `

@@ -33,7 +33,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Enviar e-mail de boas-vindas
     const emailResponse = await resend.emails.send({
-      from: "Suporte Emotiva <suporte@appemotiva.com>",
+      from: "Emotiva <no-reply@appemotiva.com>",
       to: [email],
       subject: "Bem-vindo(a) ao Emotiva! 🎉",
       html: `
