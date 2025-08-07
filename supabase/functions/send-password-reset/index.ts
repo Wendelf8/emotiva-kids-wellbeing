@@ -83,29 +83,52 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Enviar e-mail
     const emailResponse = await resend.emails.send({
-      from: "Emotiva <noreply@resend.dev>", // Usando o domínio padrão do Resend
+      from: "Suporte Emotiva <suporte@appemotiva.com>",
       to: [email],
-      subject: "Redefinir senha - Emotiva",
+      subject: "Redefinir sua senha - Emotiva",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Redefinir sua senha</h2>
-          <p>Você solicitou a redefinição de sua senha no Emotiva.</p>
-          <p>Clique no botão abaixo para redefinir sua senha:</p>
-          <div style="text-align: center; margin: 30px 0;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px 20px;">
+          <div style="text-align: center; margin-bottom: 40px;">
+            <h1 style="color: #1a1a1a; font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">Emotiva</h1>
+            <p style="color: #6b7280; font-size: 16px; margin: 8px 0 0 0;">Cuidando do bem-estar emocional</p>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 32px;">
+            <h2 style="color: #ffffff; font-size: 24px; font-weight: 600; margin: 0 0 16px 0;">Redefinir sua senha</h2>
+            <p style="color: #e5e7eb; font-size: 16px; margin: 0 0 24px 0;">Você solicitou a redefinição de sua senha. Clique no botão abaixo para criar uma nova senha.</p>
+            
             <a href="${resetUrl}" 
-               style="background-color: #007bff; color: white; padding: 12px 24px; 
-                      text-decoration: none; border-radius: 8px; display: inline-block;">
-              Redefinir Senha
+               style="display: inline-block; background-color: #ffffff; color: #667eea; padding: 16px 32px; 
+                      text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px;
+                      box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1); transition: all 0.2s;">
+              Redefinir Minha Senha
             </a>
           </div>
-          <p style="color: #666; font-size: 14px;">
-            Este link expira em 1 hora.<br>
-            Se você não solicitou esta redefinição, ignore este e-mail.
-          </p>
-          <p style="color: #666; font-size: 12px;">
-            Se o botão não funcionar, copie e cole este link no seu navegador:<br>
-            <a href="${resetUrl}">${resetUrl}</a>
-          </p>
+          
+          <div style="background-color: #f9fafb; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
+            <h3 style="color: #374151; font-size: 16px; font-weight: 600; margin: 0 0 12px 0;">⏰ Importante:</h3>
+            <ul style="color: #6b7280; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.6;">
+              <li>Este link expira em <strong>1 hora</strong></li>
+              <li>Se você não solicitou esta redefinição, pode ignorar este e-mail</li>
+              <li>Sua senha atual permanece ativa até que você defina uma nova</li>
+            </ul>
+          </div>
+          
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 24px;">
+            <p style="color: #9ca3af; font-size: 12px; margin: 0 0 8px 0;">
+              Problema com o botão? Copie e cole este link no seu navegador:
+            </p>
+            <p style="color: #6b7280; font-size: 12px; word-break: break-all; margin: 0;">
+              <a href="${resetUrl}" style="color: #667eea;">${resetUrl}</a>
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+              © 2024 Emotiva - Plataforma de Bem-estar Emocional<br>
+              <a href="mailto:suporte@appemotiva.com" style="color: #667eea; text-decoration: none;">suporte@appemotiva.com</a>
+            </p>
+          </div>
         </div>
       `,
     });
