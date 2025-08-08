@@ -3,6 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const SENDER_NAME = Deno.env.get("SENDER_NAME") || "Emotiva";
+const SENDER_EMAIL = Deno.env.get("SENDER_EMAIL") || "no-reply@appemotiva.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -83,7 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Enviar e-mail
     const emailResponse = await resend.emails.send({
-      from: "Emotiva <no-reply@appemotiva.com>",
+      from: `${SENDER_NAME} <${SENDER_EMAIL}>`,
       to: [email],
       subject: "Redefinir sua senha - Emotiva",
       html: `
