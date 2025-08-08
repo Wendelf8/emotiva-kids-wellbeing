@@ -63,26 +63,23 @@ const ResetPassword = ({ onNavigate }: ResetPasswordProps) => {
     setLoading(true);
 
     try {
-      // Usar nossa edge function personalizada
-      const response = await fetch('https://hifksggqkimdfqlhcosx.supabase.co/functions/v1/send-password-reset', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
+      // Usar nossa edge function personalizada via Supabase client (melhor para CORS)
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email },
       });
 
-      const result = await response.json();
+      const result = data as any;
 
-      if (!response.ok) {
+
+      if (error) {
         toast({
           title: "Erro ao enviar e-mail",
-          description: result.error || "Erro desconhecido",
+          description: (error as any)?.message || result?.error || "Erro desconhecido",
           variant: "destructive",
         });
-        
         // Se for rate limit, adicionar cooldown maior
-        if (result.error?.toLowerCase().includes('rate limit')) {
+        const msg = ((error as any)?.message || result?.error || '').toLowerCase();
+        if (msg.includes('rate limit')) {
           setCooldown(300); // 5 minutos
         } else {
           setCooldown(60); // 1 minuto para outros erros
@@ -94,7 +91,6 @@ const ResetPassword = ({ onNavigate }: ResetPasswordProps) => {
           title: "E-mail enviado!",
           description: "Verifique seu e-mail para redefinir a senha.",
         });
-        
         // Definir cooldown de 30 segundos para evitar spam
         setCooldown(30);
       }

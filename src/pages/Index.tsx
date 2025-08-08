@@ -18,9 +18,21 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Parar loading imediatamente e ir direto para welcome
+    const applyHashRoute = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash.startsWith('new-password')) {
+        setCurrentPage('new-password');
+      } else if (hash.startsWith('reset-password')) {
+        setCurrentPage('reset-password');
+      } else {
+        setCurrentPage('welcome');
+      }
+    };
+
+    applyHashRoute();
     setIsLoading(false);
-    setCurrentPage('welcome');
+    window.addEventListener('hashchange', applyHashRoute);
+    return () => window.removeEventListener('hashchange', applyHashRoute);
   }, []);
 
   const checkUserFlow = async (user: any) => {

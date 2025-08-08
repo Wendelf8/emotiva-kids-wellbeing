@@ -79,24 +79,17 @@ const NewPassword = ({ onNavigate }: NewPasswordProps) => {
         return;
       }
 
-      // Usar nossa edge function personalizada
-      const response = await fetch('https://hifksggqkimdfqlhcosx.supabase.co/functions/v1/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          token, 
-          newPassword: password 
-        }),
+      // Usar nossa edge function personalizada via Supabase client (melhor para CORS)
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: { token, newPassword: password },
       });
 
-      const result = await response.json();
+      const result = data as any;
 
-      if (!response.ok) {
+      if (error) {
         toast({
           title: "Erro ao atualizar senha",
-          description: result.error || "Erro desconhecido",
+          description: (error as any)?.message || result?.error || "Erro desconhecido",
           variant: "destructive",
         });
       } else {
@@ -104,7 +97,6 @@ const NewPassword = ({ onNavigate }: NewPasswordProps) => {
           title: "Senha atualizada com sucesso!",
           description: "Sua senha foi alterada. Faça login com a nova senha.",
         });
-        
         // Redirecionar para login
         onNavigate('login');
       }
