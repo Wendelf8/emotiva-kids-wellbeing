@@ -98,32 +98,6 @@ export default function MinhasTurmas({ onNavigate }: MinhasTurmasProps) {
         return;
       }
 
-      // Verificar se o usuário é do tipo escola
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('tipo_usuario')
-        .eq('id', user.user.id)
-        .single();
-
-      if (profileError) {
-        console.error('Erro ao verificar perfil:', profileError);
-        toast({
-          title: "Erro de Perfil",
-          description: "Não foi possível verificar o tipo de usuário.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (profile?.tipo_usuario !== 'escola') {
-        toast({
-          title: "Acesso Negado",
-          description: "Apenas usuários do tipo escola podem criar turmas.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       if (editingTurma) {
         const { error } = await supabase
           .from('turmas')
@@ -171,7 +145,7 @@ export default function MinhasTurmas({ onNavigate }: MinhasTurmasProps) {
       let errorMessage = "Não foi possível salvar a turma.";
       
       if (error?.code === '42501') {
-        errorMessage = "Acesso negado. Verifique se você está logado como escola e tem permissão para criar turmas.";
+        errorMessage = "Apenas usuários do tipo 'Escola' podem criar turmas. Verifique se seu perfil está configurado corretamente.";
       } else if (error?.message) {
         errorMessage = `Erro: ${error.message}`;
       }
