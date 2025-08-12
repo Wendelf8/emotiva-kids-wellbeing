@@ -77,14 +77,61 @@ export default function MinhasTurmas({ onNavigate }: MinhasTurmasProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validação dos campos obrigatórios
+    if (!formData.nome.trim()) {
+      toast({
+        title: "Erro de Validação",
+        description: "O nome da turma é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
+      if (!user.user) {
+        toast({
+          title: "Erro de Autenticação",
+          description: "Usuário não autenticado. Faça login novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verificar se o usuário é do tipo escola
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tipo_usuario')
+        .eq('id', user.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Erro ao verificar perfil:', profileError);
+        toast({
+          title: "Erro de Perfil",
+          description: "Não foi possível verificar o tipo de usuário.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (profile?.tipo_usuario !== 'escola') {
+        toast({
+          title: "Acesso Negado",
+          description: "Apenas usuários do tipo escola podem criar turmas.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (editingTurma) {
         const { error } = await supabase
           .from('turmas')
-          .update(formData)
+          .update({
+            nome: formData.nome.trim(),
+            serie: formData.serie.trim() || null,
+            descricao: formData.descricao.trim() || null
+          })
           .eq('id', editingTurma.id);
 
         if (error) throw error;
@@ -97,11 +144,16 @@ export default function MinhasTurmas({ onNavigate }: MinhasTurmasProps) {
         const { error } = await supabase
           .from('turmas')
           .insert({
-            ...formData,
+            nome: formData.nome.trim(),
+            serie: formData.serie.trim() || null,
+            descricao: formData.descricao.trim() || null,
             escola_id: user.user.id
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro detalhado ao inserir turma:', error);
+          throw error;
+        }
 
         toast({
           title: "Sucesso",
@@ -113,11 +165,20 @@ export default function MinhasTurmas({ onNavigate }: MinhasTurmasProps) {
       setEditingTurma(null);
       setFormData({ nome: '', serie: '', descricao: '' });
       fetchTurmas();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar turma:', error);
+      
+      let errorMessage = "Não foi possível salvar a turma.";
+      
+      if (error?.code === '42501') {
+        errorMessage = "Acesso negado. Verifique se você está logado como escola e tem permissão para criar turmas.";
+      } else if (error?.message) {
+        errorMessage = `Erro: ${error.message}`;
+      }
+      
       toast({
         title: "Erro",
-        description: "Não foi possível salvar a turma.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
