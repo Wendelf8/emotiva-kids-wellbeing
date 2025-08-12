@@ -131,7 +131,7 @@ const Register = ({ onNavigate }: RegisterProps) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pai">Pai/Mãe</SelectItem>
-                    <SelectItem value="escola">Escola</SelectItem>
+                    <SelectItem value="Escola">Escola</SelectItem>
                     <SelectItem value="admin">Administrador</SelectItem>
                   </SelectContent>
                 </Select>
@@ -139,14 +139,14 @@ const Register = ({ onNavigate }: RegisterProps) => {
 
               <div className="space-y-2">
                 <Label htmlFor="nome">
-                  {formData.tipo_usuario === 'escola' ? 'Nome da Escola' : 'Nome Completo'}
+                  {formData.tipo_usuario === 'Escola' ? 'Nome da Escola' : 'Nome Completo'}
                 </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="nome"
                     type="text"
-                    placeholder={formData.tipo_usuario === 'escola' ? 'Nome da Escola' : 'Seu nome completo'}
+                    placeholder={formData.tipo_usuario === 'Escola' ? 'Nome da Escola' : 'Seu nome completo'}
                     value={formData.nome}
                     onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
                     className="pl-10 h-12 rounded-xl"
