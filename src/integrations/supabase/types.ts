@@ -233,6 +233,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      delete_user: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_complete_schema: {
         Args: Record<PropertyKey, never>
         Returns: Json
