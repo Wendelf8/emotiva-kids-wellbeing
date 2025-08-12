@@ -4,11 +4,12 @@ import MoodCard from "@/components/MoodCard";
 import CheckinAlerts from "@/components/CheckinAlerts";
 import ChildManagementMenu from "@/components/ChildManagementMenu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bell, Calendar, TrendingUp, BookOpen, Settings, Menu, MoreVertical, ChevronDown, User, LogOut, HelpCircle, BarChart3 } from "lucide-react";
+import { Bell, Calendar, TrendingUp, BookOpen, Settings, Menu, MoreVertical, ChevronDown, User, LogOut, HelpCircle, BarChart3, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,8 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
   const [editedName, setEditedName] = useState("");
   const [editedEmail, setEditedEmail] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   const refreshChildren = async () => {
@@ -169,6 +172,38 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    
+    try {
+      // Deletar o usuário via RPC do Supabase
+      const { error } = await supabase.rpc('delete_user');
+      
+      if (error) {
+        throw error;
+      }
+
+      // Limpar sessão
+      await supabase.auth.signOut();
+      
+      toast({
+        title: "Conta excluída",
+        description: "Sua conta foi excluída permanentemente.",
+      });
+      
+      onNavigate('welcome');
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao excluir conta.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteAccount(false);
+    }
+  };
+
 
   const recentMoods = [
     { day: "Seg", mood: "happy" },
@@ -300,6 +335,36 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
                     <User className="w-4 h-4" />
                     Adicionar criança
                   </button>
+                  <div className="border-t my-1"></div>
+                  <AlertDialog open={showDeleteAccount} onOpenChange={setShowDeleteAccount}>
+                    <AlertDialogTrigger asChild>
+                      <button className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2 text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                        Excluir Conta
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir Conta</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação não pode ser desfeita. Isso excluirá permanentemente sua conta
+                          e removerá todos os seus dados de nossos servidores.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>
+                          Cancelar
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteAccount}
+                          disabled={isDeleting}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {isDeleting ? "Excluindo..." : "Sim, excluir conta"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </PopoverContent>
             </Popover>
