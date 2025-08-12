@@ -553,7 +553,7 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
                   </>
                 )}
 
-                {userProfile?.tipo_usuario === 'escola' && (
+                {userProfile?.tipo_usuario === 'Escola' && (
                   <>
                     <EmotivaButton 
                       variant="soft" 
