@@ -176,43 +176,12 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
     setIsDeleting(true);
     
     try {
-      // Primeiro deletar dados relacionados
-      if (userProfile?.tipo_usuario === 'pai') {
-        // Deletar check-ins das crianças
-        const { data: children } = await supabase
-          .from('criancas')
-          .select('id')
-          .eq('usuario_id', user.id);
-        
-        if (children && children.length > 0) {
-          const childIds = children.map(c => c.id);
-          await supabase
-            .from('checkins_emocionais')
-            .delete()
-            .in('crianca_id', childIds);
-        }
-        
-        // Deletar crianças
-        await supabase
-          .from('criancas')
-          .delete()
-          .eq('usuario_id', user.id);
+      // Usar a função delete_user() que já existe no banco
+      const { error } = await supabase.rpc('delete_user');
+      
+      if (error) {
+        throw error;
       }
-      
-      // Deletar alertas
-      await supabase
-        .from('alertas')
-        .delete()
-        .eq('enviado_para_id', user.id);
-      
-      // Deletar perfil
-      await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', user.id);
-      
-      // Por último, sair da conta (Supabase Auth irá lidar com a conta)
-      await supabase.auth.signOut();
       
       toast({
         title: "Conta excluída",
