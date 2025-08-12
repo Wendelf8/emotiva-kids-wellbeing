@@ -325,13 +325,15 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <button 
-                    onClick={() => onNavigate('add-child')}
-                    className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2"
-                  >
-                    <User className="w-4 h-4" />
-                    Adicionar criança
-                  </button>
+                  {userProfile?.tipo_usuario === 'pai' && (
+                    <button 
+                      onClick={() => onNavigate('add-child')}
+                      className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2"
+                    >
+                      <User className="w-4 h-4" />
+                      Adicionar criança
+                    </button>
+                  )}
                   <div className="border-t my-1"></div>
                   <AlertDialog open={showDeleteAccount} onOpenChange={setShowDeleteAccount}>
                     <AlertDialogTrigger asChild>
@@ -409,62 +411,95 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
         <div className="animate-fade-in">
           <h2 className="text-2xl font-bold mb-2">Olá, {userProfile?.nome || 'Usuário'}! 👋</h2>
           <div className="flex items-center gap-4">
-            <p className="text-muted-foreground">
-              {userProfile?.tipo_usuario === 'pai' && selectedChild 
-                ? `Como está o dia da ${selectedChild.nome} hoje?`
-                : 'Como está o seu dia hoje?'
-              }
-            </p>
-            <div className="flex items-center gap-3">
-              {children.length > 1 && (
-                <Select value={selectedChild?.id} onValueChange={(value) => {
-                  const child = children.find(c => c.id === value);
-                  setSelectedChild(child);
-                }}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Selecionar criança" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {children.map((child) => (
-                      <SelectItem key={child.id} value={child.id}>
-                        {child.nome} ({child.idade} anos)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              {selectedChild && (
-                <ChildManagementMenu 
-                  child={selectedChild}
-                  onChildUpdated={refreshChildren}
-                  onChildDeleted={refreshChildren}
-                />
-              )}
-            </div>
+          <p className="text-muted-foreground">
+            {userProfile?.tipo_usuario === 'pai' && selectedChild 
+              ? `Como está o dia da ${selectedChild.nome} hoje?`
+              : userProfile?.tipo_usuario === 'Escola'
+              ? 'Acompanhe o bem-estar emocional dos seus alunos'
+              : 'Como está o seu dia hoje?'
+            }
+          </p>
+            {userProfile?.tipo_usuario === 'pai' && (
+              <div className="flex items-center gap-3">
+                {children.length > 1 && (
+                  <Select value={selectedChild?.id} onValueChange={(value) => {
+                    const child = children.find(c => c.id === value);
+                    setSelectedChild(child);
+                  }}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Selecionar criança" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {children.map((child) => (
+                        <SelectItem key={child.id} value={child.id}>
+                          {child.nome} ({child.idade} anos)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {selectedChild && (
+                  <ChildManagementMenu 
+                    child={selectedChild}
+                    onChildUpdated={refreshChildren}
+                    onChildDeleted={refreshChildren}
+                  />
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Alertas de Check-in */}
-        <CheckinAlerts children={children} />
+        {/* Alertas de Check-in - apenas para pais */}
+        {userProfile?.tipo_usuario === 'pai' && <CheckinAlerts children={children} />}
 
         {/* Grid principal */}
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Coluna principal */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Card de humor atual */}
-            <MoodCard currentMood={currentMood} />
+            {/* Card de humor atual - apenas para pais */}
+            {userProfile?.tipo_usuario === 'pai' && <MoodCard currentMood={currentMood} />}
 
-            {/* Botão de check-in */}
-            <div className="text-center">
-              <EmotivaButton 
-                variant="primary" 
-                size="lg"
-                onClick={() => onNavigate('checkin')}
-                className="px-12"
-              >
-                ✨ Fazer Check-in
-              </EmotivaButton>
-            </div>
+            {/* Botão de check-in - apenas para pais */}
+            {userProfile?.tipo_usuario === 'pai' && (
+              <div className="text-center">
+                <EmotivaButton 
+                  variant="primary" 
+                  size="lg"
+                  onClick={() => onNavigate('checkin')}
+                  className="px-12"
+                >
+                  ✨ Fazer Check-in
+                </EmotivaButton>
+              </div>
+            )}
+
+            {/* Dashboard específico para escolas */}
+            {userProfile?.tipo_usuario === 'Escola' && (
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Painel da Escola
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">Gerencie suas turmas e alunos</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Acompanhe o bem-estar emocional dos alunos e organize suas turmas
+                    </p>
+                    <EmotivaButton 
+                      variant="primary" 
+                      onClick={() => onNavigate('minhas-turmas')}
+                    >
+                      Gerenciar Turmas
+                    </EmotivaButton>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Humor da semana */}
             <Card className="shadow-card">
