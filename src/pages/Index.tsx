@@ -9,6 +9,8 @@ import Support from "./Support";
 import AddChild from "./AddChild";
 import ResetPassword from "./ResetPassword";
 import NewPassword from "./NewPassword";
+import MinhasTurmas from "./MinhasTurmas";
+import TurmaDetalhes from "./TurmaDetalhes";
 import { supabase } from "@/integrations/supabase/client";
 import { AppContextProvider } from "@/contexts/AppContext";
 
@@ -16,6 +18,7 @@ const Index = () => {
   const [currentPage, setCurrentPage] = useState("welcome");
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
 
   useEffect(() => {
     const applyHashRoute = () => {
@@ -78,8 +81,11 @@ const Index = () => {
     }
   };
 
-  const handleNavigate = (page: string) => {
+  const handleNavigate = (page: string, turmaId?: string) => {
     setCurrentPage(page);
+    if (turmaId) {
+      setSelectedTurmaId(turmaId);
+    }
   };
 
   if (isLoading) {
@@ -115,6 +121,14 @@ const Index = () => {
         return <Support onNavigate={handleNavigate} />;
       case "add-child":
         return <AddChild onNavigate={handleNavigate} />;
+      case "minhas-turmas":
+        return <MinhasTurmas onNavigate={handleNavigate} />;
+      case "turma-detalhes":
+        return selectedTurmaId ? (
+          <TurmaDetalhes turmaId={selectedTurmaId} onNavigate={handleNavigate} />
+        ) : (
+          <Welcome onNavigate={handleNavigate} />
+        );
       default:
         return <Welcome onNavigate={handleNavigate} />;
     }

@@ -4,7 +4,7 @@ import MoodCard from "@/components/MoodCard";
 import CheckinAlerts from "@/components/CheckinAlerts";
 import ChildManagementMenu from "@/components/ChildManagementMenu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bell, Calendar, TrendingUp, BookOpen, Settings, Menu, MoreVertical, ChevronDown, User, LogOut, HelpCircle, BarChart3, Trash2 } from "lucide-react";
+import { Bell, Calendar, TrendingUp, BookOpen, Settings, Menu, MoreVertical, ChevronDown, User, LogOut, HelpCircle, BarChart3, Trash2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -560,25 +560,63 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
                 <CardTitle>Ações Rápidas</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <EmotivaButton 
-                  variant="soft" 
-                  size="sm"
-                  onClick={() => onNavigate('reports')}
-                  className="w-full justify-start"
-                >
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Ver Relatórios
-                </EmotivaButton>
-                
-                <EmotivaButton 
-                  variant="soft" 
-                  size="sm"
-                  onClick={() => onNavigate('support')}
-                  className="w-full justify-start"
-                >
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Dicas de Apoio
-                </EmotivaButton>
+                {userProfile?.tipo_usuario === 'pai' && (
+                  <>
+                    <EmotivaButton 
+                      variant="soft" 
+                      size="sm"
+                      onClick={() => onNavigate('reports')}
+                      className="w-full justify-start"
+                    >
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      Ver Relatórios
+                    </EmotivaButton>
+                    
+                    <EmotivaButton 
+                      variant="soft" 
+                      size="sm"
+                      onClick={() => onNavigate('support')}
+                      className="w-full justify-start"
+                    >
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Dicas de Apoio
+                    </EmotivaButton>
+                  </>
+                )}
+
+                {userProfile?.tipo_usuario === 'escola' && (
+                  <>
+                    <EmotivaButton 
+                      variant="soft" 
+                      size="sm"
+                      onClick={() => onNavigate('minhas-turmas')}
+                      className="w-full justify-start"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Gerenciar Turmas
+                    </EmotivaButton>
+                    
+                    <EmotivaButton 
+                      variant="soft" 
+                      size="sm"
+                      onClick={() => onNavigate('reports')}
+                      className="w-full justify-start"
+                    >
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      Relatórios Escolares
+                    </EmotivaButton>
+                    
+                    <EmotivaButton 
+                      variant="soft" 
+                      size="sm"
+                      onClick={() => onNavigate('support')}
+                      className="w-full justify-start"
+                    >
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Suporte Técnico
+                    </EmotivaButton>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>

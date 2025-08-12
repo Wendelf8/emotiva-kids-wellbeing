@@ -35,6 +35,41 @@ export type Database = {
         }
         Relationships: []
       }
+      alunos: {
+        Row: {
+          created_at: string
+          id: string
+          idade: number
+          nome: string
+          responsavel: string | null
+          turma_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          idade: number
+          nome: string
+          responsavel?: string | null
+          turma_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          idade?: number
+          nome?: string
+          responsavel?: string | null
+          turma_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alunos_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checkins_emocionais: {
         Row: {
           algo_ruim: boolean | null
@@ -200,6 +235,33 @@ export type Database = {
           id?: string
           nome?: string | null
           tipo_usuario?: string
+        }
+        Relationships: []
+      }
+      turmas: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          escola_id: string
+          id: string
+          nome: string
+          serie: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          escola_id: string
+          id?: string
+          nome: string
+          serie?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          escola_id?: string
+          id?: string
+          nome?: string
+          serie?: string | null
         }
         Relationships: []
       }
