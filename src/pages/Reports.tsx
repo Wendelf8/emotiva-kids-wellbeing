@@ -51,8 +51,10 @@ const Reports = ({ onNavigate }: ReportsProps) => {
           
           // Encontrar check-in para este dia
           const checkin = checkins?.find(c => {
-            const checkinDate = new Date(c.data_escolhida);
-            return checkinDate.toDateString() === date.toDateString();
+            // Comparar apenas as datas sem problemas de timezone
+            const checkinDateStr = c.data_escolhida; // já está no formato YYYY-MM-DD
+            const currentDateStr = date.toISOString().split('T')[0]; // converter para YYYY-MM-DD
+            return checkinDateStr === currentDateStr;
           });
 
           if (checkin) {
