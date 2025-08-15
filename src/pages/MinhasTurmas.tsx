@@ -51,7 +51,7 @@ export default function MinhasTurmas({ onNavigate }: MinhasTurmasProps) {
           *,
           alunos(count)
         `)
-        .eq('escola_id', user.user.id)
+        .eq('user_id', user.user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -121,6 +121,7 @@ export default function MinhasTurmas({ onNavigate }: MinhasTurmasProps) {
             nome: formData.nome.trim(),
             serie: formData.serie.trim() || null,
             descricao: formData.descricao.trim() || null,
+            user_id: user.user.id,
             escola_id: user.user.id
           });
 
