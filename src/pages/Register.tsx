@@ -56,7 +56,8 @@ const Register = ({ onNavigate }: RegisterProps) => {
     setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      // Configurar URL de redirecionamento corretamente
+      const redirectUrl = `${window.location.origin}/#confirmed`;
       
       const { error } = await supabase.auth.signUp({
         email: formData.email,

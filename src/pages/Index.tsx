@@ -13,16 +13,30 @@ import MinhasTurmas from "./MinhasTurmas";
 import TurmaDetalhes from "./TurmaDetalhes";
 import { supabase } from "@/integrations/supabase/client";
 import { AppContextProvider } from "@/contexts/AppContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState("welcome");
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const applyHashRoute = () => {
       const hash = window.location.hash.replace('#', '');
+      
+      // Handle email confirmation
+      if (hash === 'confirmed') {
+        toast({
+          title: "Email confirmado com sucesso!",
+          description: "Sua conta foi ativada. Você já pode fazer login.",
+        });
+        setCurrentPage('login');
+        window.history.replaceState(null, '', window.location.pathname);
+        return;
+      }
+      
       if (hash.startsWith('new-password')) {
         setCurrentPage('new-password');
       } else if (hash.startsWith('reset-password')) {

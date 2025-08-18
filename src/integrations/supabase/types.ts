@@ -294,12 +294,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_user_confirmation_status: {
+        Args: { user_email: string }
+        Returns: Json
+      }
       cleanup_expired_reset_tokens: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
       delete_user: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      force_confirm_user: {
+        Args: { user_email: string }
         Returns: undefined
       }
       get_complete_schema: {
