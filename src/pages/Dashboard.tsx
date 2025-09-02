@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAppContext } from "@/contexts/AppContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import { PaywallModal } from "@/components/PaywallModal";
 
 interface DashboardProps {
   onNavigate: (page: string) => void;
@@ -25,6 +27,7 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
   const [currentMood] = useState("neutral");
   const [children, setChildren] = useState<any[]>([]);
   const { selectedChild, setSelectedChild } = useAppContext();
+  const { canAccessPremium, isSubscribed, createCheckoutSession, openCustomerPortal } = useSubscription();
   const [alerts, setAlerts] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -37,6 +40,8 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [blockedFeature, setBlockedFeature] = useState("");
   const { toast } = useToast();
 
   const refreshChildren = async () => {
@@ -378,11 +383,18 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
               <PopoverContent className="w-56 p-0" align="end">
                 <div className="p-2">
                   <button 
-                    onClick={() => onNavigate('reports')}
+                    onClick={() => {
+                      if (!canAccessPremium()) {
+                        setBlockedFeature("Relatórios de Check-ins");
+                        setShowPaywall(true);
+                      } else {
+                        onNavigate('reports');
+                      }
+                    }}
                     className="w-full text-left p-2 rounded hover:bg-muted transition-colors flex items-center gap-2"
                   >
                     <BarChart3 className="w-4 h-4" />
-                    Ver Check-ins
+                    Ver Check-ins {!canAccessPremium() && "🔒"}
                   </button>
                   <button 
                     onClick={() => onNavigate('support')}
@@ -558,6 +570,57 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
               </CardContent>
             </Card>
 
+            {/* Status de Assinatura */}
+            {userProfile?.tipo_usuario === 'pai' && (
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {isSubscribed ? (
+                      <>
+                        <Badge className="bg-primary text-primary-foreground">Premium</Badge>
+                        <span className="text-lg">🔓</span>
+                      </>
+                    ) : (
+                      <>
+                        <Badge variant="outline">Gratuito</Badge>
+                        <span className="text-lg">🔒</span>
+                      </>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {isSubscribed ? (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        Plano Premium ativo
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={openCustomerPortal}
+                        className="w-full"
+                      >
+                        Gerenciar Assinatura
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        1 check-in gratuito por criança
+                      </p>
+                      <Button 
+                        onClick={createCheckoutSession}
+                        className="w-full"
+                        size="sm"
+                      >
+                        Assinar Premium - R$ 69,90/mês
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Ações rápidas */}
             <Card className="shadow-card">
               <CardHeader>
@@ -566,15 +629,22 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
               <CardContent className="space-y-3">
                 {userProfile?.tipo_usuario === 'pai' && (
                   <>
-                    <EmotivaButton 
-                      variant="soft" 
-                      size="sm"
-                      onClick={() => onNavigate('reports')}
-                      className="w-full justify-start"
-                    >
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      Ver Relatórios
-                    </EmotivaButton>
+                     <EmotivaButton 
+                       variant="soft" 
+                       size="sm"
+                       onClick={() => {
+                         if (!canAccessPremium()) {
+                           setBlockedFeature("Relatórios detalhados");
+                           setShowPaywall(true);
+                         } else {
+                           onNavigate('reports');
+                         }
+                       }}
+                       className="w-full justify-start"
+                     >
+                       <TrendingUp className="w-4 h-4 mr-2" />
+                       Ver Relatórios {!canAccessPremium() && "🔒"}
+                     </EmotivaButton>
                     
                     <EmotivaButton 
                       variant="soft" 
@@ -626,6 +696,12 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
           </div>
         </div>
       </div>
+      
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        feature={blockedFeature}
+      />
     </div>
   );
 };

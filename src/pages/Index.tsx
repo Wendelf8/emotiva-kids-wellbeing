@@ -11,6 +11,7 @@ import ResetPassword from "./ResetPassword";
 import NewPassword from "./NewPassword";
 import MinhasTurmas from "./MinhasTurmas";
 import TurmaDetalhes from "./TurmaDetalhes";
+import Success from "./Success";
 import { supabase } from "@/integrations/supabase/client";
 import { AppContextProvider } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +35,12 @@ const Index = () => {
         });
         setCurrentPage('login');
         window.history.replaceState(null, '', window.location.pathname);
+        return;
+      }
+
+      // Handle payment success from URL path
+      if (window.location.pathname === '/success') {
+        setCurrentPage('success');
         return;
       }
       
@@ -143,6 +150,8 @@ const Index = () => {
         ) : (
           <Welcome onNavigate={handleNavigate} />
         );
+      case "success":
+        return <Success onNavigate={handleNavigate} />;
       default:
         return <Welcome onNavigate={handleNavigate} />;
     }

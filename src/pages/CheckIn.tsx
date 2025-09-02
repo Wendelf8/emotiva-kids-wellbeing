@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatTime } from "@/utils/dateUtils";
 import { useAppContext } from "@/contexts/AppContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import { PaywallModal } from "@/components/PaywallModal";
 
 interface CheckInProps {
   onNavigate: (page: string) => void;
@@ -18,7 +20,10 @@ interface CheckInProps {
 
 const CheckIn = ({ onNavigate }: CheckInProps) => {
   const { selectedChild } = useAppContext();
+  const { canAccessPremium } = useSubscription();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkinCount, setCheckinCount] = useState(0);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [formData, setFormData] = useState({
     como_se_sente: "",
     dormiu_bem: null as boolean | null,
@@ -32,6 +37,25 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
     setFormData(prev => ({ ...prev, como_se_sente: mood }));
   };
 
+  const checkCheckinLimit = async () => {
+    if (!selectedChild) return;
+
+    const { data, error } = await supabase
+      .from('checkins_emocionais')
+      .select('id')
+      .eq('crianca_id', selectedChild.id);
+
+    if (!error && data) {
+      setCheckinCount(data.length);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedChild) {
+      checkCheckinLimit();
+    }
+  }, [selectedChild]);
+
   const handleSubmit = async () => {
     if (!selectedChild) {
       toast({
@@ -39,6 +63,12 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
         description: "Nenhuma criança selecionada.",
         variant: "destructive"
       });
+      return;
+    }
+
+    // Verificar limite de check-ins gratuitos
+    if (!canAccessPremium() && checkinCount >= 1) {
+      setShowPaywall(true);
       return;
     }
 
@@ -99,6 +129,9 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
         title: "Check-in realizado! ✨",
         description: `Check-in de ${selectedChild.nome} salvo com sucesso às ${formatTime(now)}`,
       });
+      
+      // Atualizar contador
+      setCheckinCount(prev => prev + 1);
       
       onNavigate('dashboard');
     } catch (error) {
@@ -292,6 +325,24 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
               </Card>
             )}
 
+            {/* Aviso sobre limite gratuito */}
+            {!canAccessPremium() && (
+              <Card className="bg-primary-soft/30 border-primary/20">
+                <CardContent className="pt-4">
+                  <div className="text-center">
+                    <p className="text-sm">
+                      <strong>Check-ins gratuitos:</strong> {checkinCount}/1 usado para {selectedChild?.nome}
+                    </p>
+                    {checkinCount >= 1 && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Assine o Premium para check-ins ilimitados
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Botão de finalizar */}
             <div className="pt-4">
               <EmotivaButton
@@ -307,6 +358,12 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
           </CardContent>
         </Card>
       </div>
+
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        feature="Check-ins adicionais"
+      />
     </div>
   );
 };
