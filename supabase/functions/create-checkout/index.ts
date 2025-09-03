@@ -48,12 +48,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price_data: {
-            currency: "brl",
-            product: "prod_SyudANgWZbhMG1", // Produto Emotiva
-            unit_amount: 6990, // R$ 69,90 em centavos
-            recurring: { interval: "month" },
-          },
+          price: "price_1S2woGLbmfOrOXS3G1eJQ23u", // Price ID correto do Emotiva Premium
           quantity: 1,
         },
       ],

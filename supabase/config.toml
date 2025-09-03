@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.customer-portal]
 verify_jwt = true
+
+[functions.stripe-webhooks]
+verify_jwt = false
