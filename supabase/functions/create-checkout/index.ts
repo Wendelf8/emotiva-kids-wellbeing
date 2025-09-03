@@ -33,7 +33,7 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2023-10-16" });
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY_LIVE") || "", { apiVersion: "2023-10-16" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
     if (customers.data.length > 0) {
@@ -48,7 +48,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: "price_1S2woGLbmfOrOXS3G1eJQ23u", // Price ID correto do Emotiva Premium
+          price: "price_1S3FEyLHWi8T9KCU85RxgBw9", // Price ID de produção do Emotiva Premium
           quantity: 1,
         },
       ],

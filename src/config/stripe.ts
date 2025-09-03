@@ -1,4 +1,4 @@
 export const STRIPE_CONFIG = {
-  publishableKey: "pk_test_51S2wSHLbmfOrOXS3N0V1g4LsjtI35DtmptwDpzBeZVuZcoBctmtOkcdq9fiYxpuVOlpKzfBIGqEdYPe5YjE7sl7B00muggRT6h",
-  priceId: "price_1S2woGLbmfOrOXS3G1eJQ23u"
+  publishableKey: "pk_live_51S2wRxLHWi8T9KCUtBjwipBp8nXOd5LjtueNyi8yLdea9jY9Iz5KuroyMzyl0aYVm6pmfUMvurCq0XrfYbteXL2u0068FrZzPM",
+  priceId: "price_1S3FEyLHWi8T9KCU85RxgBw9"
 };
