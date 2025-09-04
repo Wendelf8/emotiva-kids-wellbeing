@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Check, Crown, Star } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { loadStripe } from '@stripe/stripe-js';
+import { STRIPE_CONFIG } from '@/config/stripe';
 
 interface PaywallModalProps {
   isOpen: boolean;
@@ -19,8 +21,24 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
 }) => {
   const { createCheckoutSession } = useSubscription();
 
-  const handleSubscribe = () => {
-    createCheckoutSession();
+  const handleSubscribe = async () => {
+    try {
+      const stripe = await loadStripe(STRIPE_CONFIG.publishableKey);
+      if (!stripe) {
+        console.error('Stripe não carregou corretamente');
+        return;
+      }
+
+      const data = await createCheckoutSession();
+      if (data?.sessionId) {
+        const result = await stripe.redirectToCheckout({ sessionId: data.sessionId });
+        if (result.error) {
+          console.error('Erro no checkout:', result.error);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao iniciar checkout:', error);
+    }
     onClose();
   };
 

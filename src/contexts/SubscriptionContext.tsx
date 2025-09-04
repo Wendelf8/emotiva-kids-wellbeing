@@ -8,7 +8,7 @@ interface SubscriptionContextType {
   subscriptionEnd: string | null;
   loading: boolean;
   checkSubscription: () => Promise<void>;
-  createCheckoutSession: () => Promise<void>;
+  createCheckoutSession: () => Promise<{ sessionId: string } | null>;
   openCustomerPortal: () => Promise<void>;
   canAccessPremium: () => boolean;
 }
@@ -73,7 +73,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           description: "Faça login para continuar",
           variant: "destructive"
         });
-        return;
+        return null;
       }
 
       const { data, error } = await supabase.functions.invoke('create-checkout', {
@@ -88,12 +88,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           description: "Não foi possível criar a sessão de pagamento",
           variant: "destructive"
         });
-        return;
+        return null;
       }
 
-      if (data.url) {
-        window.open(data.url, '_blank');
-      }
+      return data;
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast({
@@ -101,6 +99,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         description: "Erro interno do servidor",
         variant: "destructive"
       });
+      return null;
     }
   };
 
