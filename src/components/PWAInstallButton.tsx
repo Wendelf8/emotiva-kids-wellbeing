@@ -51,7 +51,7 @@ const PWAInstallButton = () => {
       }}
     >
       <img 
-        src="/icon-48.png" 
+        src="/lovable-uploads/177bc15c-a77a-4ae3-a6b4-dd87b9040201.png" 
         alt="Emotiva" 
         className="w-6 h-6"
       />
