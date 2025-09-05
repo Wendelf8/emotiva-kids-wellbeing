@@ -19,11 +19,7 @@ const Welcome = ({ onNavigate }: WelcomeProps) => {
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-8">
         {/* Logo e título */}
         <div className="text-center mb-8 animate-fade-in">
-          <img 
-            src="/lovable-uploads/177bc15c-a77a-4ae3-a6b4-dd87b9040201.png" 
-            alt="Emotiva Logo" 
-            className="w-20 h-20 mx-auto mb-4"
-          />
+          <div className="text-6xl mb-4">💙</div>
           <h1 className="text-5xl font-bold text-foreground mb-4">
             Emotiva
           </h1>
