@@ -56,31 +56,26 @@ const Register = ({ onNavigate }: RegisterProps) => {
     setLoading(true);
 
     try {
-      // Configurar URL de redirecionamento corretamente
-      const redirectUrl = `${window.location.origin}/#confirmed`;
-      
-      const { error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            nome: formData.nome,
-            tipo_usuario: formData.tipo_usuario
-          }
-        }
+      // Criar usuário via Edge Function (sem enviar e-mail / sem limite)
+      const { data, error } = await supabase.functions.invoke('admin-signup', {
+        body: {
+          email: formData.email,
+          password: formData.password,
+          nome: formData.nome,
+          tipo_usuario: formData.tipo_usuario,
+        },
       });
 
       if (error) {
         toast({
           title: "Erro ao criar conta",
-          description: error.message,
+          description: (error as any)?.message ?? 'Tente novamente mais tarde.',
           variant: "destructive",
         });
       } else {
         toast({
           title: "Conta criada com sucesso!",
-          description: "Verifique seu e-mail para confirmar a conta.",
+          description: "Você já pode fazer login.",
         });
         onNavigate('login');
       }
