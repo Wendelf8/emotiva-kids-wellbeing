@@ -48,9 +48,9 @@ const Welcome = ({ onNavigate }: WelcomeProps) => {
           
           <Card className="p-6 text-center shadow-card border-0 bg-card/80 backdrop-blur">
             <Users className="w-12 h-12 text-accent-foreground mx-auto mb-4" />
-            <h3 className="font-semibold mb-2">Para Pais e Escolas</h3>
+            <h3 className="font-semibold mb-2">Para Pais e Profissionais</h3>
             <p className="text-sm text-muted-foreground">
-              Conectando família e educação no cuidado
+              Conectando família e psicólogos no cuidado
             </p>
           </Card>
         </div>
