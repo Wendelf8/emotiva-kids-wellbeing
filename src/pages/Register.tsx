@@ -34,6 +34,12 @@ const Register = ({ onNavigate }: RegisterProps) => {
       });
       return;
     }
+
+    // Se for psicólogo, redirecionar para cadastro específico
+    if (formData.tipo_usuario === 'psicologo') {
+      onNavigate('psychologist-register');
+      return;
+    }
     
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -66,7 +72,8 @@ const Register = ({ onNavigate }: RegisterProps) => {
           emailRedirectTo: redirectUrl,
           data: {
             nome: formData.nome,
-            tipo_usuario: formData.tipo_usuario
+            tipo_usuario: formData.tipo_usuario,
+            user_type: formData.tipo_usuario === 'escola' ? 'parent' : 'parent'
           }
         }
       });
@@ -132,6 +139,8 @@ const Register = ({ onNavigate }: RegisterProps) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pai">Pai/Mãe</SelectItem>
+                    <SelectItem value="escola">Escola</SelectItem>
+                    <SelectItem value="psicologo">Psicólogo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

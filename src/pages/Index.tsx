@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import Welcome from "./Welcome";
 import Login from "./Login";
 import Register from "./Register";
+import PsychologistRegister from "./PsychologistRegister";
 import Dashboard from "./Dashboard";
+import PsychologistDashboard from "./PsychologistDashboard";
 import CheckIn from "./CheckIn";
 import Reports from "./Reports";
 import Support from "./Support";
@@ -19,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 const Index = () => {
   const [currentPage, setCurrentPage] = useState("welcome");
   const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -53,18 +56,49 @@ const Index = () => {
       }
     };
 
-    applyHashRoute();
-    setIsLoading(false);
+    // Inicializar sessão de autenticação
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        await checkUserFlow(session.user);
+      } else {
+        applyHashRoute();
+      }
+      
+      setIsLoading(false);
+    };
+
+    // Listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await checkUserFlow(session.user);
+        } else {
+          setCurrentPage('welcome');
+          setUserProfile(null);
+        }
+      }
+    );
+
+    initializeAuth();
     window.addEventListener('hashchange', applyHashRoute);
-    return () => window.removeEventListener('hashchange', applyHashRoute);
+    
+    return () => {
+      window.removeEventListener('hashchange', applyHashRoute);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const checkUserFlow = async (user: any) => {
     try {
       // Buscar o perfil do usuário para verificar o tipo
-      const { data: profile, error: profileError } = await (supabase as any)
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('tipo_usuario')
+        .select('tipo_usuario, user_type')
         .eq('id', user.id)
         .single();
 
@@ -75,9 +109,17 @@ const Index = () => {
         return;
       }
 
+      setUserProfile(profile);
+
+      // Verificar se é psicólogo
+      if (profile.user_type === 'psychologist' || profile.tipo_usuario === 'psicologo') {
+        setCurrentPage('psychologist-dashboard');
+        return;
+      }
+
       if (profile.tipo_usuario === 'pai') {
         // Verificar se o pai tem crianças cadastradas
-        const { data: children, error: childrenError } = await (supabase as any)
+        const { data: children, error: childrenError } = await supabase
           .from('criancas')
           .select('id')
           .eq('usuario_id', user.id);
@@ -128,12 +170,16 @@ const Index = () => {
         return <Login onNavigate={handleNavigate} />;
       case "register":
         return <Register onNavigate={handleNavigate} />;
+      case "psychologist-register":
+        return <PsychologistRegister onNavigate={handleNavigate} />;
       case "reset-password":
         return <ResetPassword onNavigate={handleNavigate} />;
       case "new-password":
         return <NewPassword onNavigate={handleNavigate} />;
       case "dashboard":
         return <Dashboard onNavigate={handleNavigate} />;
+      case "psychologist-dashboard":
+        return <PsychologistDashboard onNavigate={handleNavigate} />;
       case "checkin":
         return <CheckIn onNavigate={handleNavigate} />;
       case "reports":
