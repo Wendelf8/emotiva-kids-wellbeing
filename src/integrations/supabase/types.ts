@@ -221,6 +221,7 @@ export type Database = {
           id: string
           nome: string | null
           tipo_usuario: string
+          user_type: string | null
         }
         Insert: {
           criado_em?: string | null
@@ -228,6 +229,7 @@ export type Database = {
           id: string
           nome?: string | null
           tipo_usuario: string
+          user_type?: string | null
         }
         Update: {
           criado_em?: string | null
@@ -235,8 +237,90 @@ export type Database = {
           id?: string
           nome?: string | null
           tipo_usuario?: string
+          user_type?: string | null
         }
         Relationships: []
+      }
+      psicologos: {
+        Row: {
+          celular: string
+          created_at: string
+          crp: string
+          especialidade: string
+          id: string
+          nome: string
+          psicologo_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          celular: string
+          created_at?: string
+          crp: string
+          especialidade: string
+          id?: string
+          nome: string
+          psicologo_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          celular?: string
+          created_at?: string
+          crp?: string
+          especialidade?: string
+          id?: string
+          nome?: string
+          psicologo_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      shared_reports: {
+        Row: {
+          child_id: string
+          created_at: string
+          id: string
+          parent_id: string
+          psychologist_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          id?: string
+          parent_id: string
+          psychologist_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          id?: string
+          parent_id?: string
+          psychologist_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_reports_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "criancas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_reports_psychologist_id_fkey"
+            columns: ["psychologist_id"]
+            isOneToOne: false
+            referencedRelation: "psicologos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscribers: {
         Row: {
@@ -345,6 +429,10 @@ export type Database = {
       force_confirm_user: {
         Args: { user_email: string }
         Returns: undefined
+      }
+      generate_psicologo_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_complete_schema: {
         Args: Record<PropertyKey, never>
