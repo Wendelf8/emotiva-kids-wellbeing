@@ -3,6 +3,7 @@ import EmotivaButton from "@/components/EmotivaButton";
 import MoodCard from "@/components/MoodCard";
 import CheckinAlerts from "@/components/CheckinAlerts";
 import ChildManagementMenu from "@/components/ChildManagementMenu";
+import SharedReportsManager from "@/components/SharedReportsManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, Calendar, TrendingUp, BookOpen, Settings, Menu, MoreVertical, ChevronDown, User, LogOut, HelpCircle, BarChart3, Trash2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -464,6 +465,14 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
 
         {/* Alertas de Check-in - apenas para pais */}
         {userProfile?.tipo_usuario === 'pai' && <CheckinAlerts children={children} />}
+
+        {/* Compartilhamento de relatórios */}
+        {userProfile?.tipo_usuario === 'pai' && selectedChild && (
+          <SharedReportsManager 
+            childId={selectedChild.id} 
+            childName={selectedChild.nome} 
+          />
+        )}
 
         {/* Grid principal */}
         <div className="grid lg:grid-cols-3 gap-6">

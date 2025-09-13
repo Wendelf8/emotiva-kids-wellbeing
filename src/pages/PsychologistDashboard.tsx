@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Brain, Users, TrendingUp, Settings, LogOut, Copy } from "lucide-react";
 import EmotivaButton from "@/components/EmotivaButton";
+import PsychologistNotifications from "@/components/PsychologistNotifications";
 
 interface PsychologistDashboardProps {
   onNavigate: (page: string) => void;
@@ -189,6 +190,9 @@ export default function PsychologistDashboard({ onNavigate }: PsychologistDashbo
             </div>
           </div>
         </Card>
+
+        {/* Notificações */}
+        <PsychologistNotifications psychologistData={psychologistData} />
 
         {/* Estatísticas */}
         <div className="grid md:grid-cols-3 gap-6 mb-6">
