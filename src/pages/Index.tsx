@@ -60,6 +60,14 @@ const Index = () => {
     const initializeAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
+
+      // Limpa fragmentos de token (#access_token=...) após o SDK processar
+      if (window.location.hash.includes('access_token') || window.location.hash.includes('type=signup')) {
+        // Aguarda o SDK persistir a sessão e então remove o hash para evitar URLs feias
+        setTimeout(() => {
+          window.history.replaceState(null, '', window.location.pathname);
+        }, 0);
+      }
       
       if (session?.user) {
         await checkUserFlow(session.user);
