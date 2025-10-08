@@ -26,9 +26,25 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    if (newPassword.length < 6) {
+    // Validate password strength
+    if (newPassword.length < 8) {
       return new Response(
-        JSON.stringify({ error: "A senha deve ter pelo menos 6 caracteres" }),
+        JSON.stringify({ error: "A senha deve ter pelo menos 8 caracteres" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Enforce password complexity requirements
+    const hasUppercase = /[A-Z]/.test(newPassword);
+    const hasLowercase = /[a-z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+
+    if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
+      return new Response(
+        JSON.stringify({ 
+          error: "A senha deve conter pelo menos uma letra maiúscula, uma minúscula, um número e um caractere especial" 
+        }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }

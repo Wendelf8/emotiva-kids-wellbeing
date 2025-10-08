@@ -7,9 +7,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-// Helper logging function for debugging
+// Helper logging function - masks PII for security
+const maskEmail = (email: string) => {
+  if (!email) return '';
+  const [local, domain] = email.split('@');
+  return `${local[0]}***@${domain}`;
+};
+
 const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  // Remove PII from logs
+  const sanitized = details ? { ...details } : {};
+  if (sanitized.customerEmail) {
+    sanitized.customerEmail = maskEmail(sanitized.customerEmail);
+  }
+  if (sanitized.email) {
+    sanitized.email = maskEmail(sanitized.email);
+  }
+  const detailsStr = Object.keys(sanitized).length > 0 ? ` - ${JSON.stringify(sanitized)}` : '';
   console.log(`[STRIPE-WEBHOOKS] ${step}${detailsStr}`);
 };
 
