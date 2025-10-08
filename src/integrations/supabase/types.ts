@@ -146,6 +146,7 @@ export type Database = {
           estado: string | null
           id: string
           nome: string
+          user_id: string | null
         }
         Insert: {
           cidade?: string | null
@@ -153,6 +154,7 @@ export type Database = {
           estado?: string | null
           id?: string
           nome: string
+          user_id?: string | null
         }
         Update: {
           cidade?: string | null
@@ -160,6 +162,7 @@ export type Database = {
           estado?: string | null
           id?: string
           nome?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -424,10 +427,6 @@ export type Database = {
       }
       delete_user: {
         Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      force_confirm_user: {
-        Args: { user_email: string }
         Returns: undefined
       }
       generate_psicologo_id: {
