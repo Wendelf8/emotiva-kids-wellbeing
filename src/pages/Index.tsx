@@ -13,6 +13,8 @@ import ResetPassword from "./ResetPassword";
 import NewPassword from "./NewPassword";
 import MinhasTurmas from "./MinhasTurmas";
 import TurmaDetalhes from "./TurmaDetalhes";
+import EscolaDashboard from "./EscolaDashboard";
+import EscolaSettings from "./EscolaSettings";
 import Success from "./Success";
 import { supabase } from "@/integrations/supabase/client";
 import { AppContextProvider } from "@/contexts/AppContext";
@@ -125,6 +127,12 @@ const Index = () => {
         return;
       }
 
+      // Verificar se é escola
+      if (profile.tipo_usuario === 'Escola' || profile.tipo_usuario === 'escola') {
+        setCurrentPage('escola-dashboard');
+        return;
+      }
+
       if (profile.tipo_usuario === 'pai') {
         // Verificar se o pai tem crianças cadastradas
         const { data: children, error: childrenError } = await supabase
@@ -204,6 +212,10 @@ const Index = () => {
         ) : (
           <Welcome onNavigate={handleNavigate} />
         );
+      case "escola-dashboard":
+        return <EscolaDashboard onNavigate={handleNavigate} />;
+      case "escola-settings":
+        return <EscolaSettings onNavigate={handleNavigate} />;
       case "success":
         return <Success onNavigate={handleNavigate} />;
       default:
