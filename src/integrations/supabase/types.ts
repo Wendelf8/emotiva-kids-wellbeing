@@ -35,6 +35,82 @@ export type Database = {
         }
         Relationships: []
       }
+      aluno_checkins: {
+        Row: {
+          aluno_id: string
+          criado_em: string | null
+          data: string | null
+          emocao: string
+          id: string
+          intensidade: number | null
+          observacoes: string | null
+        }
+        Insert: {
+          aluno_id: string
+          criado_em?: string | null
+          data?: string | null
+          emocao: string
+          id?: string
+          intensidade?: number | null
+          observacoes?: string | null
+        }
+        Update: {
+          aluno_id?: string
+          criado_em?: string | null
+          data?: string | null
+          emocao?: string
+          id?: string
+          intensidade?: number | null
+          observacoes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aluno_checkins_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "alunos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aluno_responsaveis: {
+        Row: {
+          aluno_id: string
+          atualizado_em: string | null
+          criado_em: string | null
+          id: string
+          responsavel_email: string
+          responsavel_user_id: string | null
+          status: string
+        }
+        Insert: {
+          aluno_id: string
+          atualizado_em?: string | null
+          criado_em?: string | null
+          id?: string
+          responsavel_email: string
+          responsavel_user_id?: string | null
+          status?: string
+        }
+        Update: {
+          aluno_id?: string
+          atualizado_em?: string | null
+          criado_em?: string | null
+          id?: string
+          responsavel_email?: string
+          responsavel_user_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aluno_responsaveis_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "alunos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alunos: {
         Row: {
           created_at: string

@@ -15,6 +15,7 @@ import MinhasTurmas from "./MinhasTurmas";
 import TurmaDetalhes from "./TurmaDetalhes";
 import EscolaDashboard from "./EscolaDashboard";
 import EscolaSettings from "./EscolaSettings";
+import EscolaRelatorios from "./EscolaRelatorios";
 import Success from "./Success";
 import { supabase } from "@/integrations/supabase/client";
 import { AppContextProvider } from "@/contexts/AppContext";
@@ -216,6 +217,8 @@ const Index = () => {
         return <EscolaDashboard onNavigate={handleNavigate} />;
       case "escola-settings":
         return <EscolaSettings onNavigate={handleNavigate} />;
+      case "escola-relatorios":
+        return <EscolaRelatorios onNavigate={handleNavigate} />;
       case "success":
         return <Success onNavigate={handleNavigate} />;
       default:

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, User, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, User, Edit, Trash2, ArrowLeft, UserPlus, Mail, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -9,6 +9,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import EmotivaButton from '@/components/EmotivaButton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 type Aluno = {
   id: string;
@@ -16,6 +18,13 @@ type Aluno = {
   idade: number;
   responsavel: string;
   created_at: string;
+};
+
+type Responsavel = {
+  id: string;
+  responsavel_email: string;
+  status: string;
+  criado_em: string;
 };
 
 type Turma = {
@@ -35,7 +44,12 @@ export default function TurmaDetalhes({ turmaId, onNavigate }: TurmaDetalhesProp
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
+  const [selectedAlunoId, setSelectedAlunoId] = useState<string>("");
+  const [responsaveis, setResponsaveis] = useState<Record<string, Responsavel[]>>({});
+  const [conviteEmail, setConviteEmail] = useState("");
+  const [escolaNome, setEscolaNome] = useState("");
   const [formData, setFormData] = useState({
     nome: '',
     idade: '',
@@ -45,7 +59,26 @@ export default function TurmaDetalhes({ turmaId, onNavigate }: TurmaDetalhesProp
 
   useEffect(() => {
     fetchTurmaData();
+    fetchEscolaNome();
   }, [turmaId]);
+
+  const fetchEscolaNome = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("escolas")
+        .select("nome")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) throw error;
+      if (data) setEscolaNome(data.nome);
+    } catch (error) {
+      console.error("Erro ao buscar nome da escola:", error);
+    }
+  };
 
   const fetchTurmaData = async () => {
     try {
@@ -68,6 +101,24 @@ export default function TurmaDetalhes({ turmaId, onNavigate }: TurmaDetalhesProp
 
       if (alunosError) throw alunosError;
       setAlunos(alunosData || []);
+
+      // Buscar responsáveis de cada aluno
+      if (alunosData && alunosData.length > 0) {
+        const responsaveisMap: Record<string, Responsavel[]> = {};
+        
+        for (const aluno of alunosData) {
+          const { data: respData } = await supabase
+            .from("aluno_responsaveis")
+            .select("*")
+            .eq("aluno_id", aluno.id);
+          
+          if (respData) {
+            responsaveisMap[aluno.id] = respData;
+          }
+        }
+        
+        setResponsaveis(responsaveisMap);
+      }
     } catch (error) {
       console.error('Erro ao buscar dados da turma:', error);
       toast({
@@ -171,6 +222,87 @@ export default function TurmaDetalhes({ turmaId, onNavigate }: TurmaDetalhesProp
     setIsDialogOpen(true);
   };
 
+  const handleSendInvite = async () => {
+    if (!conviteEmail || !selectedAlunoId) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Selecione um aluno e informe o e-mail do responsável.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: existingInvite } = await supabase
+        .from("aluno_responsaveis")
+        .select("*")
+        .eq("aluno_id", selectedAlunoId)
+        .eq("responsavel_email", conviteEmail)
+        .single();
+
+      if (existingInvite) {
+        toast({
+          title: "Convite já enviado",
+          description: "Já existe um convite pendente para este responsável.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error: insertError } = await supabase
+        .from("aluno_responsaveis")
+        .insert({
+          aluno_id: selectedAlunoId,
+          responsavel_email: conviteEmail,
+          status: "pendente",
+        });
+
+      if (insertError) throw insertError;
+
+      const aluno = alunos.find(a => a.id === selectedAlunoId);
+      const { error: emailError } = await supabase.functions.invoke("send-parent-invite", {
+        body: {
+          responsavelEmail: conviteEmail,
+          alunoNome: aluno?.nome || "Aluno",
+          escolaNome: escolaNome,
+          alunoId: selectedAlunoId,
+        },
+      });
+
+      if (emailError) throw emailError;
+
+      toast({
+        title: "Convite enviado!",
+        description: `Convite enviado para ${conviteEmail}`,
+      });
+
+      setInviteDialogOpen(false);
+      setConviteEmail("");
+      setSelectedAlunoId("");
+      fetchTurmaData();
+    } catch (error: any) {
+      console.error("Erro ao enviar convite:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar o convite.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "aceito":
+        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" /> Aceito</Badge>;
+      case "pendente":
+        return <Badge variant="outline"><Clock className="w-3 h-3 mr-1" /> Pendente</Badge>;
+      case "recusado":
+        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" /> Recusado</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -220,13 +352,14 @@ export default function TurmaDetalhes({ turmaId, onNavigate }: TurmaDetalhesProp
             )}
           </div>
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openCreateDialog} className="flex items-center gap-2">
-                <Plus size={20} />
-                Adicionar Aluno
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-3">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openCreateDialog} className="flex items-center gap-2">
+                  <Plus size={20} />
+                  Adicionar Aluno
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
@@ -284,78 +417,140 @@ export default function TurmaDetalhes({ turmaId, onNavigate }: TurmaDetalhesProp
               </form>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <UserPlus size={20} />
+                Convidar Responsável
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Convidar Responsável</DialogTitle>
+                <DialogDescription>
+                  Envie um convite por e-mail para o responsável acompanhar o aluno.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="aluno">Selecione o Aluno *</Label>
+                  <select
+                    id="aluno"
+                    className="w-full p-2 border rounded-md"
+                    value={selectedAlunoId}
+                    onChange={(e) => setSelectedAlunoId(e.target.value)}
+                  >
+                    <option value="">Selecione um aluno</option>
+                    {alunos.map((aluno) => (
+                      <option key={aluno.id} value={aluno.id}>
+                        {aluno.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="email">E-mail do Responsável *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={conviteEmail}
+                    onChange={(e) => setConviteEmail(e.target.value)}
+                    placeholder="email@exemplo.com"
+                  />
+                </div>
+                <Button onClick={handleSendInvite} className="w-full gap-2">
+                  <Mail className="w-4 h-4" />
+                  Enviar Convite
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          </div>
         </div>
 
-        {alunos.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <User size={48} className="mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Nenhum aluno encontrado</h3>
-              <p className="text-muted-foreground mb-4">
-                Comece adicionando alunos a esta turma.
-              </p>
-              <Button onClick={openCreateDialog} className="flex items-center gap-2 mx-auto">
-                <Plus size={20} />
-                Adicionar Primeiro Aluno
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {alunos.map((aluno) => (
-              <Card key={aluno.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="truncate">{aluno.nome}</span>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(aluno)}
-                      >
-                        <Edit size={16} />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 size={16} />
+        <Card>
+          <CardContent className="p-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Idade</TableHead>
+                  <TableHead>Responsável</TableHead>
+                  <TableHead>Status Convite</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {alunos.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
+                      <div className="flex flex-col items-center gap-2">
+                        <User size={32} className="text-muted-foreground" />
+                        <p>Nenhum aluno cadastrado nesta turma.</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  alunos.map((aluno) => (
+                    <TableRow key={aluno.id}>
+                      <TableCell className="font-medium">{aluno.nome}</TableCell>
+                      <TableCell>{aluno.idade} anos</TableCell>
+                      <TableCell>{aluno.responsavel || "-"}</TableCell>
+                      <TableCell>
+                        {responsaveis[aluno.id] && responsaveis[aluno.id].length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            {responsaveis[aluno.id].map((resp) => (
+                              <div key={resp.id} className="flex items-center gap-2">
+                                <span className="text-sm">{resp.responsavel_email}</span>
+                                {getStatusBadge(resp.status)}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">Sem convites</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(aluno)}
+                          >
+                            <Edit size={16} />
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remover Aluno</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem certeza de que deseja remover o aluno "{aluno.nome}" da turma? 
-                              Esta ação não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(aluno)}>
-                              Remover
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </CardTitle>
-                  <CardDescription>{aluno.idade} anos</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {aluno.responsavel && (
-                    <div className="text-sm text-muted-foreground">
-                      <span className="font-medium">Responsável:</span> {aluno.responsavel}
-                    </div>
-                  )}
-                  
-                  <div className="text-xs text-muted-foreground mt-2">
-                    Adicionado em {new Date(aluno.created_at).toLocaleDateString('pt-BR')}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 size={16} className="text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remover Aluno</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza de que deseja remover o aluno "{aluno.nome}" da turma? 
+                                  Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(aluno)}>
+                                  Remover
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

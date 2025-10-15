@@ -209,6 +209,15 @@ export default function EscolaDashboard({ onNavigate }: EscolaDashboardProps) {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => onNavigate('escola-relatorios')}
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Relatórios
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => onNavigate('escola-settings')}
             >
               <Settings className="w-4 h-4 mr-2" />
