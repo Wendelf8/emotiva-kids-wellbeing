@@ -62,8 +62,8 @@ const Register = ({ onNavigate }: RegisterProps) => {
     setLoading(true);
 
     try {
-      // Configurar URL de redirecionamento para a aplicação
-      const redirectUrl = `${window.location.origin}/`;
+      // Configurar URL de redirecionamento para o callback de autenticação
+      const redirectUrl = 'https://emotiva-kids-wellbeing.lovable.app/auth/callback';
       
       const { error } = await supabase.auth.signUp({
         email: formData.email,

@@ -17,6 +17,7 @@ import EscolaDashboard from "./EscolaDashboard";
 import EscolaSettings from "./EscolaSettings";
 import EscolaRelatorios from "./EscolaRelatorios";
 import Success from "./Success";
+import AuthCallback from "./AuthCallback";
 import { supabase } from "@/integrations/supabase/client";
 import { AppContextProvider } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -33,34 +34,16 @@ const Index = () => {
     const applyHashRoute = () => {
       const hash = window.location.hash.replace('#', '');
       const params = new URLSearchParams(hash);
+      const path = window.location.pathname;
       
-      // Handle email confirmation success
-      if (hash === 'confirmed') {
-        toast({
-          title: "Email confirmado com sucesso!",
-          description: "Sua conta foi ativada. Você já pode fazer login.",
-        });
-        setCurrentPage('login');
-        window.history.replaceState(null, '', window.location.pathname);
-        return;
-      }
-
-      // Handle expired/invalid confirmation links
-      const errorCode = params.get('error_code');
-      const errorDesc = (params.get('error_description') || '').toLowerCase();
-      if (errorCode === 'otp_expired' || errorDesc.includes('invalid')) {
-        toast({
-          title: 'Link de confirmação expirado ou inválido',
-          description: 'Informe seu e-mail e reenviamos o link na tela de login.',
-          variant: 'destructive',
-        });
-        setCurrentPage('login');
-        window.history.replaceState(null, '', window.location.pathname);
+      // Handle auth callback for email confirmation
+      if (path === '/auth/callback' || params.get('token_hash')) {
+        setCurrentPage('auth-callback');
         return;
       }
 
       // Handle payment success from URL path
-      if (window.location.pathname === '/success') {
+      if (path === '/success') {
         setCurrentPage('success');
         return;
       }
@@ -208,6 +191,8 @@ const Index = () => {
         return <ResetPassword onNavigate={handleNavigate} />;
       case "new-password":
         return <NewPassword onNavigate={handleNavigate} />;
+      case "auth-callback":
+        return <AuthCallback onNavigate={handleNavigate} />;
       case "dashboard":
         return <Dashboard onNavigate={handleNavigate} />;
       case "psychologist-dashboard":
