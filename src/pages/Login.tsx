@@ -30,11 +30,20 @@ const Login = ({ onNavigate }: LoginProps) => {
       });
 
       if (error) {
-        toast({
-          title: "Erro ao fazer login",
-          description: error.message,
-          variant: "destructive",
-        });
+        const msg = error.message || '';
+        if (msg.toLowerCase().includes('email not confirmed')) {
+          toast({
+            title: 'Confirme seu e-mail',
+            description: 'Seu cadastro ainda não foi confirmado. Reenvie o e-mail de confirmação abaixo.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Erro ao fazer login',
+            description: msg,
+            variant: 'destructive',
+          });
+        }
       } else {
         toast({
           title: "Login realizado com sucesso!",
@@ -48,6 +57,32 @@ const Login = ({ onNavigate }: LoginProps) => {
         description: "Tente novamente mais tarde.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!formData.email) {
+      toast({
+        title: 'Informe seu e-mail',
+        description: 'Digite o e-mail usado no cadastro para reenviar a confirmação.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: formData.email,
+        options: { emailRedirectTo: `${window.location.origin}/` },
+      });
+      if (error) {
+        toast({ title: 'Não foi possível reenviar', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'E-mail reenviado', description: 'Verifique sua caixa de entrada e spam.' });
+      }
     } finally {
       setLoading(false);
     }
@@ -127,6 +162,14 @@ const Login = ({ onNavigate }: LoginProps) => {
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Esqueci minha senha
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={handleResendConfirmation}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Reenviar e-mail de confirmação
                 </button>
                 
                 <div>

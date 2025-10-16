@@ -32,12 +32,27 @@ const Index = () => {
   useEffect(() => {
     const applyHashRoute = () => {
       const hash = window.location.hash.replace('#', '');
+      const params = new URLSearchParams(hash);
       
-      // Handle email confirmation
+      // Handle email confirmation success
       if (hash === 'confirmed') {
         toast({
           title: "Email confirmado com sucesso!",
           description: "Sua conta foi ativada. Você já pode fazer login.",
+        });
+        setCurrentPage('login');
+        window.history.replaceState(null, '', window.location.pathname);
+        return;
+      }
+
+      // Handle expired/invalid confirmation links
+      const errorCode = params.get('error_code');
+      const errorDesc = (params.get('error_description') || '').toLowerCase();
+      if (errorCode === 'otp_expired' || errorDesc.includes('invalid')) {
+        toast({
+          title: 'Link de confirmação expirado ou inválido',
+          description: 'Informe seu e-mail e reenviamos o link na tela de login.',
+          variant: 'destructive',
         });
         setCurrentPage('login');
         window.history.replaceState(null, '', window.location.pathname);
