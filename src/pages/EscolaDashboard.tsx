@@ -396,7 +396,7 @@ export default function EscolaDashboard({ onNavigate }: EscolaDashboardProps) {
               <Users className="w-4 h-4 mr-2" />
               Gerenciar Turmas
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => onNavigate('minhas-turmas')}>
               <Mail className="w-4 h-4 mr-2" />
               Convidar Pais
             </Button>
