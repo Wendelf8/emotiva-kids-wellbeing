@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Users, TrendingUp, AlertTriangle, Calendar, Settings, LogOut, BarChart3, Mail } from 'lucide-react';
+import { Users, TrendingUp, AlertTriangle, BarChart3, Mail, Settings as SettingsIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import PWAInstallButton from '@/components/PWAInstallButton';
 
 type EscolaDashboardProps = {
   onNavigate: (page: string) => void;
@@ -184,43 +184,46 @@ export default function EscolaDashboard({ onNavigate }: EscolaDashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <header className="bg-card shadow-sm p-4">
+      <header className="bg-card/80 backdrop-blur-sm border-b border-border/40 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="text-2xl">💙</div>
+            <div className="text-3xl">💙</div>
             <div>
-              <h1 className="text-xl font-bold">Emotiva - Escola</h1>
+              <h1 className="text-xl font-bold text-foreground">Emotiva - Escola</h1>
               <p className="text-sm text-muted-foreground">{userProfile?.nome}</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <nav className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => onNavigate('minhas-turmas')}
+              className="text-foreground"
             >
               <Users className="w-4 h-4 mr-2" />
               Turmas
             </Button>
             
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => onNavigate('escola-relatorios')}
+              className="text-foreground"
             >
               <BarChart3 className="w-4 h-4 mr-2" />
               Relatórios
             </Button>
             
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => onNavigate('escola-settings')}
+              className="text-foreground"
             >
-              <Settings className="w-4 h-4 mr-2" />
+              <SettingsIcon className="w-4 h-4 mr-2" />
               Configurações
             </Button>
             
@@ -228,85 +231,67 @@ export default function EscolaDashboard({ onNavigate }: EscolaDashboardProps) {
               variant="ghost"
               size="sm"
               onClick={handleLogout}
+              className="text-foreground"
             >
-              <LogOut className="w-4 h-4 mr-2" />
               Sair
             </Button>
-          </div>
+          </nav>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-        {/* Filtro de Turma */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-            <p className="text-muted-foreground">Acompanhe o bem-estar emocional dos alunos</p>
-          </div>
-          
-          {turmas.length > 0 && (
-            <Select value={selectedTurma} onValueChange={setSelectedTurma}>
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder="Selecionar turma" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as turmas</SelectItem>
-                {turmas.map((turma) => (
-                  <SelectItem key={turma.id} value={turma.id}>
-                    {turma.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+        {/* Título */}
+        <div>
+          <h2 className="text-3xl font-bold text-foreground">Painel</h2>
+          <p className="text-muted-foreground mt-1">Acompanhe o bem-estar emocional dos alunos</p>
         </div>
 
         {/* Cards de Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Alunos</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-card/60 backdrop-blur border-border/40">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-foreground">Total de Alunos</CardTitle>
+              <Users className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalAlunos}</div>
-              <p className="text-xs text-muted-foreground">
-                {selectedTurma === 'all' ? 'Em todas as turmas' : 'Na turma selecionada'}
+              <div className="text-3xl font-bold text-foreground">{stats.totalAlunos}</div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Em todas as turmas
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Check-ins (7 dias)</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Card className="bg-card/60 backdrop-blur border-border/40">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-foreground">Check-ins (7 dias)</CardTitle>
+              <BarChart3 className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalCheckins}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-bold text-foreground">{stats.totalCheckins}</div>
+              <p className="text-sm text-muted-foreground mt-1">
                 Últimos 7 dias
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Alertas Ativos</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          <Card className="bg-card/60 backdrop-blur border-border/40">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-foreground">Alertas Ativos</CardTitle>
+              <AlertTriangle className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.alertasAtivos}</div>
-              <p className="text-xs text-muted-foreground">
-                Alunos que requerem atenção
+              <div className="text-3xl font-bold text-foreground">{stats.alertasAtivos}</div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Alunos que chamam atenção
               </p>
             </CardContent>
           </Card>
         </div>
 
         {/* Emoções Mais Frequentes */}
-        <Card>
+        <Card className="bg-card/60 backdrop-blur border-border/40">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-foreground">
               <BarChart3 className="w-5 h-5" />
               Emoções Mais Frequentes
             </CardTitle>
@@ -322,7 +307,7 @@ export default function EscolaDashboard({ onNavigate }: EscolaDashboardProps) {
                     <span className="text-2xl">{stat.emoji}</span>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium capitalize">{stat.emotion}</span>
+                        <span className="text-sm font-medium capitalize text-foreground">{stat.emotion}</span>
                         <span className="text-sm text-muted-foreground">
                           {stat.count} ({stat.percentage}%)
                         </span>
@@ -346,9 +331,9 @@ export default function EscolaDashboard({ onNavigate }: EscolaDashboardProps) {
         </Card>
 
         {/* Evolução Semanal */}
-        <Card>
+        <Card className="bg-card/60 backdrop-blur border-border/40">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-foreground">
               <TrendingUp className="w-5 h-5" />
               Evolução Semanal
             </CardTitle>
@@ -364,13 +349,13 @@ export default function EscolaDashboard({ onNavigate }: EscolaDashboardProps) {
                 
                 return (
                   <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
-                    <div className="w-full bg-muted rounded-t-lg relative" style={{ height: '100%' }}>
+                    <div className="w-full bg-muted/30 rounded-t-lg relative" style={{ height: '100%' }}>
                       <div
-                        className="bg-primary rounded-t-lg absolute bottom-0 w-full flex items-end justify-center pb-2"
+                        className="bg-teal-500 rounded-t-lg absolute bottom-0 w-full flex items-end justify-center pb-2"
                         style={{ height: `${height}%`, minHeight: item.count > 0 ? '24px' : '0' }}
                       >
                         {item.count > 0 && (
-                          <span className="text-xs font-medium text-primary-foreground">
+                          <span className="text-xs font-medium text-white">
                             {item.count}
                           </span>
                         )}
@@ -387,12 +372,15 @@ export default function EscolaDashboard({ onNavigate }: EscolaDashboardProps) {
         </Card>
 
         {/* Ações Rápidas */}
-        <Card>
+        <Card className="bg-card/60 backdrop-blur border-border/40">
           <CardHeader>
-            <CardTitle>Ações Rápidas</CardTitle>
+            <CardTitle className="text-foreground">Ações Rápidas</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
-            <Button onClick={() => onNavigate('minhas-turmas')}>
+            <Button 
+              onClick={() => onNavigate('minhas-turmas')}
+              className="bg-teal-500 hover:bg-teal-600 text-white"
+            >
               <Users className="w-4 h-4 mr-2" />
               Gerenciar Turmas
             </Button>
@@ -401,11 +389,16 @@ export default function EscolaDashboard({ onNavigate }: EscolaDashboardProps) {
               Convidar Pais
             </Button>
             <Button variant="outline" onClick={() => onNavigate('escola-settings')}>
-              <Settings className="w-4 h-4 mr-2" />
+              <SettingsIcon className="w-4 h-4 mr-2" />
               Configurações
             </Button>
           </CardContent>
         </Card>
+      </div>
+
+      {/* PWA Install Button - Fixed position */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <PWAInstallButton />
       </div>
     </div>
   );
