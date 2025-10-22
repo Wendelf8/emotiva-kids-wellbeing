@@ -42,13 +42,20 @@ export default function EscolaDashboard({ onNavigate }: EscolaDashboardProps) {
       if (!user) return;
 
       // Buscar perfil
+      // Buscar perfil e escola
       const { data: profile } = await supabase
         .from('profiles')
         .select('nome, email')
         .eq('id', user.id)
         .single();
 
-      setUserProfile(profile);
+      const { data: escolaData } = await supabase
+        .from('escolas')
+        .select('nome')
+        .eq('user_id', user.id)
+        .single();
+
+      setUserProfile({ ...profile, escolaNome: escolaData?.nome || 'Escola' });
 
       // Buscar turmas
       const { data: turmasData } = await supabase
@@ -192,7 +199,7 @@ export default function EscolaDashboard({ onNavigate }: EscolaDashboardProps) {
             <div className="text-3xl">💙</div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Emotiva - Escola</h1>
-              <p className="text-sm text-muted-foreground">{userProfile?.nome}</p>
+              <p className="text-sm text-muted-foreground">{userProfile?.escolaNome || 'Alucina'}</p>
             </div>
           </div>
           
