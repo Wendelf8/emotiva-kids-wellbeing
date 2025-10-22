@@ -82,17 +82,25 @@ export default function EscolaDashboard({ onNavigate }: EscolaDashboardProps) {
 
       const { data: alunos } = await alunosQuery;
       const totalAlunos = alunos?.length || 0;
+      const alunoIds = alunos?.map(a => a.id) || [];
 
-      // Buscar check-ins (últimos 7 dias)
+      // Buscar check-ins dos alunos (últimos 7 dias)
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      // Como não temos vínculo direto entre alunos e crianças, 
-      // vamos contar todos os check-ins da escola
-      const { data: checkins, count: totalCheckins } = await supabase
-        .from('checkins_emocionais')
-        .select('*', { count: 'exact' })
-        .gte('created_at', sevenDaysAgo.toISOString());
+      let checkins: any[] = [];
+      let totalCheckins = 0;
+
+      if (alunoIds.length > 0) {
+        const { data: checkinsData, count } = await supabase
+          .from('aluno_checkins')
+          .select('*', { count: 'exact' })
+          .in('aluno_id', alunoIds)
+          .gte('criado_em', sevenDaysAgo.toISOString());
+        
+        checkins = checkinsData || [];
+        totalCheckins = count || 0;
+      }
 
       // Calcular estatísticas de emoções
       const emotionCounts: { [key: string]: number } = {};
