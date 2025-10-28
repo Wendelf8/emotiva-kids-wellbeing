@@ -87,9 +87,23 @@ const AddChild = ({ onNavigate }: AddChildProps) => {
     setLoading(true);
 
     try {
+      // Obter o ID do usuário autenticado
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Você precisa estar logado para adicionar crianças.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       const childrenToInsert = validChildren.map(child => ({
         nome: child.nome.trim(),
-        idade: Number(child.idade)
+        idade: Number(child.idade),
+        usuario_id: currentUser.id
       }));
 
       console.log('Children to insert:', childrenToInsert);
