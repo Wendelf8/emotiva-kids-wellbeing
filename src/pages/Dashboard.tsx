@@ -94,7 +94,10 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
           
           if (childrenData && childrenData.length > 0) {
             setChildren(childrenData);
-            setSelectedChild(childrenData[0]);
+            // Só define selectedChild se ainda não tiver um selecionado
+            if (!selectedChild) {
+              setSelectedChild(childrenData[0]);
+            }
           }
         }
 

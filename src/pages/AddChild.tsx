@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, User, Calendar, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAppContext } from "@/contexts/AppContext";
 
 interface AddChildProps {
   onNavigate: (page: string) => void;
@@ -22,6 +23,7 @@ const AddChild = ({ onNavigate }: AddChildProps) => {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
+  const { setSelectedChild } = useAppContext();
 
   useEffect(() => {
     const getUser = async () => {
@@ -92,9 +94,10 @@ const AddChild = ({ onNavigate }: AddChildProps) => {
 
       console.log('Children to insert:', childrenToInsert);
 
-      const { error } = await supabase
+      const { data: insertedChildren, error } = await supabase
         .from('criancas')
-        .insert(childrenToInsert as any);
+        .insert(childrenToInsert as any)
+        .select();
 
       if (error) {
         toast({
@@ -103,6 +106,11 @@ const AddChild = ({ onNavigate }: AddChildProps) => {
           variant: "destructive",
         });
       } else {
+        // Selecionar a primeira criança adicionada
+        if (insertedChildren && insertedChildren.length > 0) {
+          setSelectedChild(insertedChildren[0]);
+        }
+        
         toast({
           title: "Crianças adicionadas com sucesso!",
           description: `${validChildren.length} criança(s) adicionada(s).`,
