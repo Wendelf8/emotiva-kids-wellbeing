@@ -44,99 +44,106 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
   const [showPaywall, setShowPaywall] = useState(false);
   const [blockedFeature, setBlockedFeature] = useState("");
   const { toast } = useToast();
+  const [authChecked, setAuthChecked] = useState(false);
+  const [childrenLoading, setChildrenLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const refreshChildren = async () => {
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    
-    if (!currentUser) return;
+    setChildrenLoading(true);
+    try {
+      const { data: { user: currentUser }, error } = await supabase.auth.getUser();
+      if (error) console.log('Erro ao obter usuário:', error);
+      if (!currentUser) {
+        console.log('Nenhum usuário autenticado ao carregar crianças');
+        setErrorMsg('Usuário não autenticado');
+        return;
+      }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tipo_usuario')
-      .eq('id', currentUser.id)
-      .single();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tipo_usuario')
+        .eq('id', currentUser.id)
+        .maybeSingle();
 
-    if (profile?.tipo_usuario === 'pai') {
-      const { data: childrenData } = await supabase
-        .from('criancas')
-        .select('*')
-        .eq('usuario_id', currentUser.id)
-        .order('criado_em', { ascending: true });
-      
-      if (childrenData) {
-        console.log('Crianças recarregadas:', childrenData);
-        setChildren(childrenData);
+      if (profile?.tipo_usuario === 'pai') {
+        const { data: childrenData, error: childrenErr } = await supabase
+          .from('criancas')
+          .select('*')
+          .eq('usuario_id', currentUser.id)
+          .order('criado_em', { ascending: true });
         
-        // Se não há criança selecionada mas há crianças disponíveis, selecionar a primeira
-        if (!selectedChild && childrenData.length > 0) {
-          setSelectedChild(childrenData[0]);
+        if (childrenErr) {
+          console.log('Erro ao buscar crianças:', childrenErr);
         }
-        // Se a criança selecionada foi deletada, selecionar a primeira disponível
-        else if (selectedChild && !childrenData.find(c => c.id === selectedChild.id)) {
-          setSelectedChild(childrenData.length > 0 ? childrenData[0] : null);
+
+        if (childrenData) {
+          setChildren(childrenData);
+          
+          if (!selectedChild && childrenData.length > 0) {
+            setSelectedChild(childrenData[0]);
+          } else if (selectedChild && !childrenData.find(c => c.id === selectedChild.id)) {
+            setSelectedChild(childrenData.length > 0 ? childrenData[0] : null);
+          }
         }
       }
+    } finally {
+      setChildrenLoading(false);
     }
   };
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        
-        // Buscar perfil do usuário
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        setUserProfile(profile);
-        
-        // Inicializar campos de edição
-        if (profile) {
-          setEditedName(profile.nome || "");
-          setEditedEmail(profile.email || "");
-        }
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) console.log('Erro ao obter usuário:', error);
 
-        // Se for pai, buscar crianças
-        if (profile && profile.tipo_usuario === 'pai') {
-          const { data: childrenData } = await supabase
-            .from('criancas')
-            .select('*')
-            .eq('usuario_id', user.id)
-            .order('criado_em', { ascending: true });
-          
-          if (childrenData && childrenData.length > 0) {
-            setChildren(childrenData);
-            // Só define selectedChild se ainda não tiver um selecionado
-            if (!selectedChild) {
-              setSelectedChild(childrenData[0]);
-            }
-          }
-        }
-
-        // Buscar alertas do usuário
-        const { data: alertsData } = await supabase
-          .from('alertas')
-          .select('*')
-          .eq('enviado_para_id', user.id)
-          .order('criado_em', { ascending: false })
-          .limit(5);
-        
-        if (alertsData) {
-          setAlerts(alertsData);
-        }
+      if (!user) {
+        console.log('Nenhum usuário autenticado no Dashboard');
+        setErrorMsg('Usuário não autenticado');
+        setAuthChecked(true);
+        return;
       }
+
+      setUser(user);
+      
+      // Buscar perfil do usuário
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      setUserProfile(profile);
+      
+      // Inicializar campos de edição
+      if (profile) {
+        setEditedName(profile.nome || "");
+        setEditedEmail(profile.email || "");
+      }
+
+      // Carregamento inicial das crianças
+      await refreshChildren();
+
+      // Buscar alertas do usuário
+      const { data: alertsData } = await supabase
+        .from('alertas')
+        .select('*')
+        .eq('enviado_para_id', user.id)
+        .order('criado_em', { ascending: false })
+        .limit(5);
+      
+      if (alertsData) {
+        setAlerts(alertsData);
+      }
+
+      setAuthChecked(true);
     };
     
     getUser();
   }, []);
 
-  // Listener separado para atualizações em tempo real - só ativa quando temos usuário
+  // Listener separado para atualizações em tempo real - só ativa quando temos usuário e após carregamento inicial
   useEffect(() => {
-    if (!user || !userProfile) return;
+    if (!authChecked || !user || !userProfile) return;
 
     // Só criar listener se for usuário do tipo pai
     if (userProfile.tipo_usuario !== 'pai') return;
@@ -161,7 +168,7 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, userProfile]);
+  }, [authChecked, user, userProfile]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
