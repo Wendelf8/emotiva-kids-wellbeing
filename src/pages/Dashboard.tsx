@@ -48,32 +48,32 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
   const refreshChildren = async () => {
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     
-    if (currentUser) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('tipo_usuario')
-        .eq('id', currentUser.id)
-        .single();
+    if (!currentUser) return;
 
-      if (profile?.tipo_usuario === 'pai') {
-        const { data: childrenData } = await supabase
-          .from('criancas')
-          .select('*')
-          .eq('usuario_id', currentUser.id)
-          .order('criado_em', { ascending: true });
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tipo_usuario')
+      .eq('id', currentUser.id)
+      .single();
+
+    if (profile?.tipo_usuario === 'pai') {
+      const { data: childrenData } = await supabase
+        .from('criancas')
+        .select('*')
+        .eq('usuario_id', currentUser.id)
+        .order('criado_em', { ascending: true });
+      
+      if (childrenData) {
+        console.log('Crianças recarregadas:', childrenData);
+        setChildren(childrenData);
         
-        if (childrenData) {
-          console.log('Crianças recarregadas:', childrenData);
-          setChildren(childrenData);
-          
-          // Se não há criança selecionada mas há crianças disponíveis, selecionar a primeira
-          if (!selectedChild && childrenData.length > 0) {
-            setSelectedChild(childrenData[0]);
-          }
-          // Se a criança selecionada foi deletada, selecionar a primeira disponível
-          else if (selectedChild && !childrenData.find(c => c.id === selectedChild.id)) {
-            setSelectedChild(childrenData.length > 0 ? childrenData[0] : null);
-          }
+        // Se não há criança selecionada mas há crianças disponíveis, selecionar a primeira
+        if (!selectedChild && childrenData.length > 0) {
+          setSelectedChild(childrenData[0]);
+        }
+        // Se a criança selecionada foi deletada, selecionar a primeira disponível
+        else if (selectedChild && !childrenData.find(c => c.id === selectedChild.id)) {
+          setSelectedChild(childrenData.length > 0 ? childrenData[0] : null);
         }
       }
     }
@@ -86,7 +86,7 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
         setUser(user);
         
         // Buscar perfil do usuário
-        const { data: profile } = await (supabase as any)
+        const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
@@ -102,7 +102,7 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
 
         // Se for pai, buscar crianças
         if (profile && profile.tipo_usuario === 'pai') {
-          const { data: childrenData } = await (supabase as any)
+          const { data: childrenData } = await supabase
             .from('criancas')
             .select('*')
             .eq('usuario_id', user.id)
@@ -118,7 +118,7 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
         }
 
         // Buscar alertas do usuário
-        const { data: alertsData } = await (supabase as any)
+        const { data: alertsData } = await supabase
           .from('alertas')
           .select('*')
           .eq('enviado_para_id', user.id)
@@ -132,8 +132,15 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
     };
     
     getUser();
+  }, []);
 
-    // Subscrever a mudanças em tempo real na tabela criancas
+  // Listener separado para atualizações em tempo real - só ativa quando temos usuário
+  useEffect(() => {
+    if (!user || !userProfile) return;
+
+    // Só criar listener se for usuário do tipo pai
+    if (userProfile.tipo_usuario !== 'pai') return;
+
     const channel = supabase
       .channel('criancas-changes')
       .on(
@@ -141,10 +148,11 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
         {
           event: '*',
           schema: 'public',
-          table: 'criancas'
+          table: 'criancas',
+          filter: `usuario_id=eq.${user.id}`
         },
-        () => {
-          // Recarregar lista de crianças quando houver qualquer mudança
+        (payload) => {
+          console.log('Mudança detectada em criancas:', payload);
           refreshChildren();
         }
       )
@@ -153,7 +161,7 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user, userProfile]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
