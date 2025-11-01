@@ -46,18 +46,34 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
   const { toast } = useToast();
 
   const refreshChildren = async () => {
-    if (user && userProfile?.tipo_usuario === 'pai') {
-      const { data: childrenData } = await supabase
-        .from('criancas')
-        .select('*')
-        .eq('usuario_id', user.id)
-        .order('criado_em', { ascending: true });
-      
-      if (childrenData) {
-        setChildren(childrenData);
-        // Se a criança selecionada foi deletada, selecionar a primeira disponível
-        if (selectedChild && !childrenData.find(c => c.id === selectedChild.id)) {
-          setSelectedChild(childrenData.length > 0 ? childrenData[0] : null);
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    
+    if (currentUser) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tipo_usuario')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (profile?.tipo_usuario === 'pai') {
+        const { data: childrenData } = await supabase
+          .from('criancas')
+          .select('*')
+          .eq('usuario_id', currentUser.id)
+          .order('criado_em', { ascending: true });
+        
+        if (childrenData) {
+          console.log('Crianças recarregadas:', childrenData);
+          setChildren(childrenData);
+          
+          // Se não há criança selecionada mas há crianças disponíveis, selecionar a primeira
+          if (!selectedChild && childrenData.length > 0) {
+            setSelectedChild(childrenData[0]);
+          }
+          // Se a criança selecionada foi deletada, selecionar a primeira disponível
+          else if (selectedChild && !childrenData.find(c => c.id === selectedChild.id)) {
+            setSelectedChild(childrenData.length > 0 ? childrenData[0] : null);
+          }
         }
       }
     }
@@ -116,6 +132,27 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
     };
     
     getUser();
+
+    // Subscrever a mudanças em tempo real na tabela criancas
+    const channel = supabase
+      .channel('criancas-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'criancas'
+        },
+        () => {
+          // Recarregar lista de crianças quando houver qualquer mudança
+          refreshChildren();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleLogout = async () => {
