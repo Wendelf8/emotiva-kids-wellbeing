@@ -47,6 +47,7 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [childrenLoading, setChildrenLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
   const refreshChildren = async () => {
     if (!user || !userProfile) return;
@@ -79,6 +80,7 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
       console.log('Erro ao carregar crianças:', error);
     } finally {
       setChildrenLoading(false);
+      if (!initialLoaded) setInitialLoaded(true);
     }
   };
 
@@ -147,11 +149,10 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
     }
   }, [authChecked, user, userProfile]);
 
-  // Listener separado para atualizações em tempo real - só ativa após carregamento inicial
+  // Listener separado para atualizações em tempo real - só ativa APÓS o primeiro carregamento
   useEffect(() => {
-    if (!authChecked || !user || !userProfile) return;
+    if (!authChecked || !user || !userProfile || !initialLoaded) return;
 
-    // Só criar listener se for usuário do tipo pai
     if (userProfile.tipo_usuario !== 'pai') return;
 
     const channel = supabase
@@ -164,8 +165,7 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
           table: 'criancas',
           filter: `usuario_id=eq.${user.id}`
         },
-        (payload) => {
-          console.log('Mudança detectada em criancas:', payload);
+        () => {
           refreshChildren();
         }
       )
@@ -174,7 +174,7 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [authChecked, user, userProfile]);
+  }, [authChecked, user, userProfile, initialLoaded]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -288,8 +288,8 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
     }
   };
 
-  // Tela de carregamento
-  if (!authChecked || childrenLoading) {
+  // Tela de carregamento - apenas no início
+  if (!authChecked) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -522,6 +522,9 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
               ? 'Acompanhe o bem-estar emocional dos seus alunos'
               : 'Como está o seu dia hoje?'
             }
+            {childrenLoading && (
+              <span className="ml-2 text-xs text-muted-foreground">Atualizando crianças...</span>
+            )}
           </p>
             {userProfile?.tipo_usuario === 'pai' && (
               <div className="flex items-center gap-3">
