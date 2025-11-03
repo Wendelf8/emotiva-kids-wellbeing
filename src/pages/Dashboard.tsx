@@ -49,31 +49,20 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const refreshChildren = async () => {
+    if (!user || !userProfile) return;
+    
     setChildrenLoading(true);
     try {
-      const { data: { user: currentUser }, error } = await supabase.auth.getUser();
-      if (error) console.log('Erro ao obter usuário:', error);
-      if (!currentUser) {
-        console.log('Nenhum usuário autenticado ao carregar crianças');
-        setErrorMsg('Usuário não autenticado');
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('tipo_usuario')
-        .eq('id', currentUser.id)
-        .maybeSingle();
-
-      if (profile?.tipo_usuario === 'pai') {
+      if (userProfile.tipo_usuario === 'pai') {
         const { data: childrenData, error: childrenErr } = await supabase
           .from('criancas')
           .select('*')
-          .eq('usuario_id', currentUser.id)
+          .eq('usuario_id', user.id)
           .order('criado_em', { ascending: true });
         
         if (childrenErr) {
           console.log('Erro ao buscar crianças:', childrenErr);
+          return;
         }
 
         if (childrenData) {
@@ -86,6 +75,8 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
           }
         }
       }
+    } catch (error) {
+      console.log('Erro ao carregar crianças:', error);
     } finally {
       setChildrenLoading(false);
     }
@@ -93,55 +84,70 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) console.log('Erro ao obter usuário:', error);
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.log('Erro ao obter usuário:', error);
+          setErrorMsg('Erro de autenticação');
+          setAuthChecked(true);
+          return;
+        }
 
-      if (!user) {
-        console.log('Nenhum usuário autenticado no Dashboard');
-        setErrorMsg('Usuário não autenticado');
+        if (!user) {
+          console.log('Nenhum usuário autenticado no Dashboard');
+          setErrorMsg('Usuário não autenticado');
+          setAuthChecked(true);
+          return;
+        }
+
+        setUser(user);
+        
+        // Buscar perfil do usuário
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        setUserProfile(profile);
+        
+        // Inicializar campos de edição
+        if (profile) {
+          setEditedName(profile.nome || "");
+          setEditedEmail(profile.email || "");
+        }
+
+        // Buscar alertas do usuário
+        const { data: alertsData } = await supabase
+          .from('alertas')
+          .select('*')
+          .eq('enviado_para_id', user.id)
+          .order('criado_em', { ascending: false })
+          .limit(5);
+        
+        if (alertsData) {
+          setAlerts(alertsData);
+        }
+
         setAuthChecked(true);
-        return;
+      } catch (error) {
+        console.error('Erro crítico no Dashboard:', error);
+        setErrorMsg('Erro interno');
+        setAuthChecked(true);
       }
-
-      setUser(user);
-      
-      // Buscar perfil do usuário
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      setUserProfile(profile);
-      
-      // Inicializar campos de edição
-      if (profile) {
-        setEditedName(profile.nome || "");
-        setEditedEmail(profile.email || "");
-      }
-
-      // Carregamento inicial das crianças
-      await refreshChildren();
-
-      // Buscar alertas do usuário
-      const { data: alertsData } = await supabase
-        .from('alertas')
-        .select('*')
-        .eq('enviado_para_id', user.id)
-        .order('criado_em', { ascending: false })
-        .limit(5);
-      
-      if (alertsData) {
-        setAlerts(alertsData);
-      }
-
-      setAuthChecked(true);
     };
     
     getUser();
   }, []);
 
-  // Listener separado para atualizações em tempo real - só ativa quando temos usuário e após carregamento inicial
+  // Carregar crianças após autenticação e perfil estarem prontos
+  useEffect(() => {
+    if (authChecked && user && userProfile) {
+      refreshChildren();
+    }
+  }, [authChecked, user, userProfile]);
+
+  // Listener separado para atualizações em tempo real - só ativa após carregamento inicial
   useEffect(() => {
     if (!authChecked || !user || !userProfile) return;
 
@@ -281,6 +287,36 @@ const Dashboard = ({ onNavigate }: DashboardProps) => {
       default: return "😐";
     }
   };
+
+  // Tela de carregamento
+  if (!authChecked || childrenLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">💙</div>
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Tela de erro se não houver usuário
+  if (errorMsg) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <p className="text-muted-foreground">{errorMsg}</p>
+          <button 
+            onClick={() => onNavigate('welcome')}
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded"
+          >
+            Voltar ao início
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
