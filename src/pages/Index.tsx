@@ -80,25 +80,30 @@ const Index = () => {
     };
 
     // Listener para mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await checkUserFlow(session.user);
-        } else {
-          setCurrentPage('welcome');
-          setUserProfile(null);
-        }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        // Evitar deadlocks: não chamar Supabase direto no callback
+        setTimeout(() => {
+          checkUserFlow(session.user);
+        }, 0);
+      } else {
+        setCurrentPage('welcome');
+        setUserProfile(null);
       }
-    );
+    });
 
     initializeAuth();
+    const safetyTimeout = window.setTimeout(() => {
+      setIsLoading(false);
+    }, 8000);
     window.addEventListener('hashchange', applyHashRoute);
     
     return () => {
       window.removeEventListener('hashchange', applyHashRoute);
       subscription.unsubscribe();
+      window.clearTimeout(safetyTimeout);
     };
   }, []);
 
