@@ -497,26 +497,15 @@ export type Database = {
         Args: { user_email: string }
         Returns: Json
       }
-      cleanup_expired_reset_tokens: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      delete_user: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      generate_psicologo_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_complete_schema: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      is_escola_user: {
-        Args: { user_id: string }
+      cleanup_expired_reset_tokens: { Args: never; Returns: undefined }
+      delete_user: { Args: never; Returns: undefined }
+      generate_psicologo_id: { Args: never; Returns: string }
+      get_complete_schema: { Args: never; Returns: Json }
+      is_child_shared_with_current_psych: {
+        Args: { _child_id: string }
         Returns: boolean
       }
+      is_escola_user: { Args: { user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
