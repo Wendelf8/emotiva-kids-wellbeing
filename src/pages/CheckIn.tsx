@@ -38,12 +38,24 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
   };
 
   const checkCheckinLimit = async () => {
-    if (!selectedChild) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
+    // Buscar todas as crianças do usuário
+    const { data: criancas } = await supabase
+      .from('criancas')
+      .select('id')
+      .eq('usuario_id', user.id);
+
+    if (!criancas || criancas.length === 0) return;
+
+    const criancaIds = criancas.map(c => c.id);
+
+    // Contar check-ins de todas as crianças do usuário
     const { data, error } = await supabase
       .from('checkins_emocionais')
       .select('id')
-      .eq('crianca_id', selectedChild.id);
+      .in('crianca_id', criancaIds);
 
     if (!error && data) {
       setCheckinCount(data.length);
@@ -51,10 +63,8 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
   };
 
   useEffect(() => {
-    if (selectedChild) {
-      checkCheckinLimit();
-    }
-  }, [selectedChild]);
+    checkCheckinLimit();
+  }, []);
 
   const handleSubmit = async () => {
     if (!selectedChild) {
@@ -331,7 +341,7 @@ const CheckIn = ({ onNavigate }: CheckInProps) => {
                 <CardContent className="pt-4">
                   <div className="text-center">
                     <p className="text-sm">
-                      <strong>Check-ins gratuitos:</strong> {checkinCount}/1 usado para {selectedChild?.nome}
+                      <strong>Check-ins gratuitos:</strong> {checkinCount}/1 usado na sua conta
                     </p>
                     {checkinCount >= 1 && (
                       <p className="text-xs text-muted-foreground mt-2">
